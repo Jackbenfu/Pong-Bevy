@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pong</title>
+    <link rel="preload" href="pixel.ttf" as="font"/>
+    <style>
+        @font-face {
+            font-family: 'pixel';
+            src: url('pixel.ttf');
+        }
+
+        body {
+            background: #000;
+            margin: 0 auto;
+            padding: 0;
+            width: 768px;
+        }
+
+        canvas {
+            outline: none;
+        }
+
+        #warning-focus {
+            background: #C45949;
+            bottom: 0;
+            color: #FFF;
+            cursor: pointer;
+            font-family: pixel, sans-serif;
+            font-size: 30px;
+            height: 60px;
+            left: 0;
+            line-height: 30px;
+            margin: auto;
+            padding: 10px;
+            position: absolute;
+            right: 0;
+            text-align: center;
+            top: 0;
+            width: 550px;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body onfocus="onFocus()" onblur="onBlur()">
+<div id="warning-focus" style="display: none">
+    Game has lost focus!<br/>
+    Click on me to restore focus...
+</div>
+<script type="text/javascript">
+    window.focus();
+
+    function onFocus() {
+        document.getElementById('warning-focus').style.display = 'none';
+        document.getElementsByTagName('canvas')[0].style.opacity = 1.0.toString();
+    }
+
+    function onBlur() {
+        document.getElementById('warning-focus').style.display = 'block';
+        document.getElementsByTagName('canvas')[0].style.opacity = .2.toString();
+    }
+</script>
+<script type="module">
+    import init from './pong_bevy.js'
+
+    init()
+</script>
+</body>
+</html>
