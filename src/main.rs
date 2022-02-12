@@ -9,10 +9,12 @@ mod mode_2p;
 mod mode_wall;
 
 use bevy::prelude::*;
-use state::*;
-use menu::*;
 use config_time::*;
 use resources::*;
+use menu::*;
+use mode_1p::*;
+use mode_2p::*;
+use mode_wall::*;
 
 /*
 #[derive(Component)]
@@ -258,7 +260,6 @@ fn setup_system(
 }
 
 fn main() {
-    // When building for WASM, print panics to the browser console
     #[cfg(target_arch = "wasm32")]
         console_error_panic_hook::set_once();
 
@@ -281,7 +282,9 @@ fn main() {
         .add_startup_system(setup_system)
         .add_plugins(DefaultPlugins)
         .add_plugin(MenuPlugin)
-        .add_state(GameState::Menu)
+        .add_plugin(Mode1PPlugin)
+        .add_plugin(Mode2PPlugin)
+        .add_plugin(ModeWallPlugin)
         .run();
 
     /*.add_startup_system(setup_system)

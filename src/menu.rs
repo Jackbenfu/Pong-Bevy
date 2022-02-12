@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+#[cfg(not(target_arch = "wasm32"))] use bevy::app::*;
 use crate::resources::*;
 use crate::utils::*;
 use crate::state::*;
@@ -17,9 +18,6 @@ impl Plugin for MenuPlugin {
             .add_system_set(
                 SystemSet::on_update(GameState::Menu)
                     .with_system(hover_buttons_system)
-                    //.with_system(click_button_system::<MenuButton1Player, GameState::Mode1P>)
-                    //.with_system(click_button_system::<MenuButton2Players, GameState::Mode2P>)
-                    //.with_system(click_button_system::<MenuButtonWallMode, GameState::ModeWall>)
                     .with_system(click_1_player_button_system)
                     .with_system(click_2_players_button_system)
                     .with_system(click_wall_mode_button_system)
@@ -27,7 +25,14 @@ impl Plugin for MenuPlugin {
             .add_system_set(
                 SystemSet::on_exit(GameState::Menu)
                     .with_system(cleanup_system::<MenuEntity>)
-            );
+            )
+            .add_state(GameState::Menu);
+
+        #[cfg(not(target_arch = "wasm32"))]
+            app.add_system_set(
+            SystemSet::on_update(GameState::Menu)
+                .with_system(click_quit_button_system)
+        );
     }
 }
 
@@ -45,6 +50,9 @@ struct MenuButton2Players {}
 
 #[derive(Component)]
 struct MenuButtonWallMode {}
+
+#[derive(Component)]
+struct MenuButtonQuit {}
 
 fn setup_background_system(
     window: Res<WindowDescriptor>,
@@ -200,8 +208,6 @@ fn setup_buttons_system(
     window: Res<WindowDescriptor>,
     mut commands: Commands,
 ) {
-    // TODO Handle mouse cursor change
-
     // 1 player button
     commands
         .spawn_bundle(ButtonBundle {
@@ -309,19 +315,61 @@ fn setup_buttons_system(
         .insert(MenuEntity {})
         .insert(MenuButton {})
         .insert(MenuButtonWallMode {});
+
+    // quit button
+    #[cfg(not(target_arch = "wasm32"))]
+        commands
+        .spawn_bundle(ButtonBundle {
+            style: Style {
+                size: Size::new(Val::Px(256.), Val::Px(48.)),
+                position: Rect {
+                    right: Val::Px((window.width - 256.) / 2.),
+                    top: Val::Px(464.),
+                    ..Default::default()
+                },
+                position_type: PositionType::Absolute,
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..Default::default()
+            },
+            color: Color::rgba(0., 0., 0., 0.).into(),
+            ..Default::default()
+        })
+        .with_children(|parent| {
+            parent.spawn_bundle(TextBundle {
+                text: Text::with_section(
+                    "Quit",
+                    TextStyle {
+                        font: resources.font.clone(),
+                        font_size: 36.,
+                        color: Color::WHITE,
+                    },
+                    Default::default(),
+                ),
+                ..Default::default()
+            });
+        })
+        .insert(MenuEntity {})
+        .insert(MenuButton {})
+        .insert(MenuButtonQuit {});
 }
 
 fn hover_buttons_system(
+    mut windows: ResMut<Windows>,
     mut interaction_query: Query<(&Interaction, &Children), With<MenuButton>>,
     mut text_query: Query<&mut Text>,
 ) {
     const YELLOW: Color = Color::rgb(221. / 255., 173. / 255., 29. / 255.);
+
+    let window = windows.get_primary_mut().unwrap();
+    let mut hovered: bool = false;
 
     for (interaction, children) in interaction_query.iter_mut() {
         let mut text = text_query.get_mut(children[0]).unwrap();
         match *interaction {
             Interaction::Hovered => {
                 text.sections[0].style.color = YELLOW;
+                hovered = true;
             }
             Interaction::None => {
                 text.sections[0].style.color = Color::WHITE;
@@ -329,21 +377,9 @@ fn hover_buttons_system(
             _ => {}
         }
     }
-}
 
-/*fn click_button_system<T: Component, U>(
-    mut state: ResMut<State<GameState>>,
-    interaction_query: Query<&Interaction, With<T>>,
-) {
-    for interaction in interaction_query.iter() {
-        match *interaction {
-            Interaction::Clicked => {
-                state.set(U).unwrap();
-            }
-            _ => {}
-        }
-    }
-}*/
+    window.set_cursor_icon(if hovered { CursorIcon::Hand } else { CursorIcon::Default });
+}
 
 fn click_1_player_button_system(
     mut state: ResMut<State<GameState>>,
@@ -381,6 +417,21 @@ fn click_wall_mode_button_system(
         match *interaction {
             Interaction::Clicked => {
                 state.set(GameState::ModeWall).unwrap();
+            }
+            _ => {}
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn click_quit_button_system(
+    mut app_exit_events: EventWriter<AppExit>,
+    interaction_query: Query<&Interaction, With<MenuButtonQuit>>,
+) {
+    for interaction in interaction_query.iter() {
+        match *interaction {
+            Interaction::Clicked => {
+                app_exit_events.send(AppExit);
             }
             _ => {}
         }
