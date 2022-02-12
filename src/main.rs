@@ -1,14 +1,20 @@
+mod config_time;
+mod config_game;
+mod resources;
+mod utils;
+mod state;
+mod menu;
+mod mode_1p;
+mod mode_2p;
+mod mode_wall;
+
 use bevy::prelude::*;
-use bevy::window::WindowMode;
+use state::*;
+use menu::*;
+use config_time::*;
+use resources::*;
 
-// Timing
-const TIME_STEP: f32 = 1. / 60.;
-
-// Display
-const SCREEN_WIDTH: f32 = 768.;
-const SCREEN_HEIGHT: f32 = 576.;
-const SPRITE_UNIT_SIZE: f32 = 16.;
-
+/*
 #[derive(Component)]
 struct Paddle {
     speed: f32,
@@ -17,7 +23,21 @@ struct Paddle {
 #[derive(Component)]
 struct Wall {}
 
-fn setup(mut commands: Commands) {
+#[derive(Component)]
+struct Ball {
+    velocity: Vec3,
+    speed: f32,
+}
+
+#[derive(Component)]
+struct Player {}
+
+#[derive(Component)]
+struct AI {
+    velocity: Vec3,
+}
+
+fn setup_system(mut commands: Commands) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle(UiCameraBundle::default());
 
@@ -53,7 +73,7 @@ fn setup(mut commands: Commands) {
         })
         .insert(Wall {});
 
-    // left paddle
+    // player paddle
     commands
         .spawn_bundle(SpriteBundle {
             transform: Transform {
@@ -67,9 +87,10 @@ fn setup(mut commands: Commands) {
             },
             ..Default::default()
         })
-        .insert(Paddle { speed: 400. });
+        .insert(Player {})
+        .insert(Paddle { speed: PADDLE_SPEED });
 
-    // right paddle
+    // ai paddle
     commands
         .spawn_bundle(SpriteBundle {
             transform: Transform {
@@ -82,6 +103,30 @@ fn setup(mut commands: Commands) {
                 ..Default::default()
             },
             ..Default::default()
+        })
+        .insert(AI {
+            velocity: Vec3::default(),
+
+        })
+        .insert(Paddle { speed: PADDLE_SPEED });
+
+    // ball
+    commands
+        .spawn_bundle(SpriteBundle {
+            transform: Transform {
+                translation: Vec3::new(-SPRITE_UNIT_SIZE * 4., 0., 0.),
+                scale: Vec3::new(SPRITE_UNIT_SIZE, SPRITE_UNIT_SIZE, 0.),
+                ..Default::default()
+            },
+            sprite: Sprite {
+                color: Color::rgb_u8(221, 173, 29),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert(Ball {
+            velocity: Vec3::default(),
+            speed: PADDLE_SPEED,
         });
 
     // net
@@ -119,28 +164,13 @@ fn setup(mut commands: Commands) {
 
         y += SPRITE_UNIT_SIZE * 3.;
     }
-
-    // ball
-    commands
-        .spawn_bundle(SpriteBundle {
-            transform: Transform {
-                translation: Vec3::new(-SPRITE_UNIT_SIZE * 4., 0., 0.),
-                scale: Vec3::new(SPRITE_UNIT_SIZE, SPRITE_UNIT_SIZE, 0.),
-                ..Default::default()
-            },
-            sprite: Sprite {
-                color: Color::rgb_u8(221, 173, 29),
-                ..Default::default()
-            },
-            ..Default::default()
-        });
 }
 
-fn left_paddle_move_system(
+fn player_paddle_move_system(
     keyboard_input: Res<Input<KeyCode>>,
-    mut query: Query<(&Paddle, &mut Transform)>,
+    mut player_query: Query<(&Paddle, &mut Transform), With<Player>>,
 ) {
-    let (paddle, mut transform) = query.single_mut();
+    let (player_paddle, mut player_transform) = player_query.single_mut();
     let mut direction = 0.;
 
     if keyboard_input.pressed(KeyCode::S) {
@@ -151,15 +181,90 @@ fn left_paddle_move_system(
         direction -= 1.;
     }
 
+    let bound_y = SCREEN_HEIGHT / 2. - SPRITE_UNIT_SIZE - player_transform.scale.y / 2.;
+
+    let translation = &mut player_transform.translation;
+    translation.y += direction * player_paddle.speed * TIME_STEP;
+    translation.y = translation.y.min(bound_y).max(-bound_y);
+}
+
+fn ai_paddle_move_system(
+    ball_query: Query<(&Ball, &Transform)>,
+    mut ai_query: Query<(&mut AI, &mut Transform), Without<Ball>>,
+) {
+    let (ball, ball_transform) = ball_query.single();
+    let (mut ai_paddle, mut ai_transform) = ai_query.single_mut();
+
+    let ball_velocity = ball.velocity;
+
+    if ball_velocity.x < 0. {
+        ai_paddle.velocity.y = 0.;
+        ai_transform.translation += Vec3::default();
+        return;
+    }
+
+    let ball_y = ball_transform.translation.y;
+    let ai_paddle_y = ai_transform.translation.y;
+    let dist = (ai_paddle_y - ball_y).abs();
+    let rnd: f32 = random::<f32>() % ai_transform.scale.y + 1.;
+
+    if dist < rnd {
+        ai_paddle.velocity.y = 0.;
+        ai_transform.translation += Vec3::default();
+        return;
+    }
+
+    let dir = if ball_y > ai_paddle_y { PADDLE_SPEED } else { -PADDLE_SPEED };
+    ai_paddle.velocity.y = dir;
+
+    let bound_y = SCREEN_HEIGHT / 2. - SPRITE_UNIT_SIZE - ai_transform.scale.y / 2.;
+
+    ai_transform.translation += ai_paddle.velocity * TIME_STEP;
+    ai_transform.translation.y = ai_transform.translation.y.min(bound_y).max(-bound_y);
+}
+
+fn ball_move_system(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut ball_query: Query<(&Ball, &mut Transform)>,
+) {
+    let (ball, mut transform) = ball_query.single_mut();
+    let mut direction = 0.;
+
+    if keyboard_input.pressed(KeyCode::P) {
+        direction += 1.;
+    }
+
+    if keyboard_input.pressed(KeyCode::L) {
+        direction -= 1.;
+    }
+
     let y_bound = SCREEN_HEIGHT / 2. - SPRITE_UNIT_SIZE - transform.scale.y / 2.;
 
     let translation = &mut transform.translation;
-    translation.y += direction * paddle.speed * TIME_STEP;
+    translation.y += direction * ball.speed * TIME_STEP;
     translation.y = translation.y.min(y_bound).max(-y_bound);
+}
+*/
+
+fn setup_system(
+    mut commands: Commands,
+    mut resources: ResMut<Resources>,
+    asset_server: Res<AssetServer>,
+) {
+    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn_bundle(UiCameraBundle::default());
+
+    resources.font = asset_server.load("fonts/Volter__28Goldfish_29.ttf");
 }
 
 fn main() {
+    // When building for WASM, print panics to the browser console
+    #[cfg(target_arch = "wasm32")]
+        console_error_panic_hook::set_once();
+
     App::new()
+        .init_resource::<Resources>()
+        .init_resource::<TimeConfig>()
         .insert_resource(bevy::log::LogSettings {
             level: bevy::log::Level::DEBUG,
             filter: "info,pong_bevy=debug".to_string(),
@@ -167,15 +272,20 @@ fn main() {
         .insert_resource(ClearColor(Color::BLACK))
         .insert_resource(WindowDescriptor {
             title: "Pong".to_string(),
-            width: SCREEN_WIDTH,
-            height: SCREEN_HEIGHT,
+            width: 768.,
+            height: 576.,
             resizable: false,
-            mode: WindowMode::Windowed,
+            mode: bevy::window::WindowMode::Windowed,
             ..Default::default()
         })
+        .add_startup_system(setup_system)
         .add_plugins(DefaultPlugins)
-        .add_startup_system(setup)
-        .add_system(left_paddle_move_system)
-        .add_system(bevy::input::system::exit_on_esc_system)
+        .add_plugin(MenuPlugin)
+        .add_state(GameState::Menu)
         .run();
+
+    /*.add_startup_system(setup_system)
+    .add_system(player_paddle_move_system)
+    .add_system(ball_move_system)
+    .add_system(ai_paddle_move_system)*/
 }
