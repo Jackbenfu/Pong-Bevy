@@ -1,5 +1,6 @@
 use bevy::prelude::*;
-#[cfg(not(target_arch = "wasm32"))] use bevy::app::*;
+#[cfg(not(target_arch = "wasm32"))]
+use bevy::app::*;
 use crate::resources::*;
 use crate::utils::*;
 use crate::state::*;
@@ -13,6 +14,7 @@ impl Plugin for MenuPlugin {
                 SystemSet::on_enter(GameState::Menu)
                     .with_system(setup_background_system)
                     .with_system(setup_title_system)
+                    .with_system(setup_copyright_system)
                     .with_system(setup_buttons_system)
             )
             .add_system_set(
@@ -36,6 +38,9 @@ impl Plugin for MenuPlugin {
     }
 }
 
+const SPRITE_UNITY_SIZE: f32 = 16.;
+const GREY: Color = Color::rgb(100. / 255., 100. / 255., 100. / 255.);
+
 #[derive(Component)]
 struct MenuEntity {}
 
@@ -58,9 +63,6 @@ fn setup_background_system(
     window: Res<WindowDescriptor>,
     mut commands: Commands,
 ) {
-    const SPRITE_UNITY_SIZE: f32 = 16.;
-    const GREY: Color = Color::rgb(100. / 255., 100. / 255., 100. / 255.);
-
     // top wall
     commands
         .spawn_bundle(SpriteBundle {
@@ -199,6 +201,36 @@ fn setup_title_system(
                 ),
                 ..Default::default()
             });
+        })
+        .insert(MenuEntity {});
+}
+
+fn setup_copyright_system(
+    resources: Res<Resources>,
+    mut commands: Commands,
+) {
+    commands
+        .spawn_bundle(TextBundle {
+            style: Style {
+                align_self: AlignSelf::FlexEnd,
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    bottom: Val::Px(SPRITE_UNITY_SIZE + 15.),
+                    right: Val::Px(15.),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            text: Text::with_section(
+                "Copyright © 2022 Jackbenfu",
+                TextStyle {
+                    font: resources.font.clone(),
+                    font_size: 18.,
+                    color: GREY,
+                },
+                Default::default(),
+            ),
+            ..Default::default()
         })
         .insert(MenuEntity {});
 }
