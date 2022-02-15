@@ -2,44 +2,10 @@ use bevy::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::app::*;
 use crate::resources::*;
-use crate::utils::*;
+use crate::helpers_system::*;
+use crate::helpers_sprite::*;
+use crate::SpriteConfig;
 use crate::state::*;
-
-pub struct MenuPlugin;
-
-impl Plugin for MenuPlugin {
-    fn build(&self, app: &mut App) {
-        app
-            .add_system_set(
-                SystemSet::on_enter(GameState::Menu)
-                    .with_system(setup_background_system)
-                    .with_system(setup_title_system)
-                    .with_system(setup_copyright_system)
-                    .with_system(setup_buttons_system)
-            )
-            .add_system_set(
-                SystemSet::on_update(GameState::Menu)
-                    .with_system(hover_buttons_system)
-                    .with_system(click_1_player_button_system)
-                    .with_system(click_2_players_button_system)
-                    .with_system(click_wall_mode_button_system)
-            )
-            .add_system_set(
-                SystemSet::on_exit(GameState::Menu)
-                    .with_system(cleanup_system::<MenuEntity>)
-            )
-            .add_state(GameState::Menu);
-
-        #[cfg(not(target_arch = "wasm32"))]
-            app.add_system_set(
-            SystemSet::on_update(GameState::Menu)
-                .with_system(click_quit_button_system)
-        );
-    }
-}
-
-const SPRITE_UNITY_SIZE: f32 = 16.;
-const GREY: Color = Color::rgb(100. / 255., 100. / 255., 100. / 255.);
 
 #[derive(Component)]
 struct MenuEntity {}
@@ -59,110 +25,83 @@ struct MenuButtonWallMode {}
 #[derive(Component)]
 struct MenuButtonQuit {}
 
+pub struct MenuPlugin;
+
+impl Plugin for MenuPlugin {
+    fn build(&self, app: &mut App) {
+        const GAME_STATE: GameState = GameState::Menu;
+
+        app
+            .add_system_set(
+                SystemSet::on_enter(GAME_STATE)
+                    .with_system(setup_background_system)
+                    .with_system(setup_title_system)
+                    .with_system(setup_copyright_system)
+                    .with_system(setup_buttons_system)
+            )
+            .add_system_set(
+                SystemSet::on_update(GAME_STATE)
+                    .with_system(hover_buttons_system)
+                    .with_system(click_1_player_button_system)
+                    .with_system(click_2_players_button_system)
+                    .with_system(click_wall_mode_button_system)
+            )
+            .add_system_set(
+                SystemSet::on_exit(GAME_STATE)
+                    .with_system(cleanup_system::<MenuEntity>)
+            )
+            .add_state(GAME_STATE);
+
+        #[cfg(not(target_arch = "wasm32"))]
+            app.add_system_set(
+            SystemSet::on_update(GAME_STATE)
+                .with_system(click_quit_button_system)
+        );
+    }
+}
+
 fn setup_background_system(
-    window: Res<WindowDescriptor>,
     mut commands: Commands,
+    window: Res<WindowDescriptor>,
+    sprite_config: Res<SpriteConfig>,
 ) {
-    // top wall
+    let color = sprite_config.color_grey;
+    let unit_size = sprite_config.unit_size;
+
     commands
-        .spawn_bundle(SpriteBundle {
-            transform: Transform {
-                translation: Vec3::new(0., window.height / 2. - SPRITE_UNITY_SIZE / 2., 0.),
-                scale: Vec3::new(window.width, SPRITE_UNITY_SIZE, 0.),
-                ..Default::default()
-            },
-            sprite: Sprite {
-                color: GREY,
-                ..Default::default()
-            },
-            ..Default::default()
-        })
+        .spawn_bundle(create_top_wall_sprite(window.width, window.height, unit_size, color))
         .insert(MenuEntity {});
 
-    // bottom wall
     commands
-        .spawn_bundle(SpriteBundle {
-            transform: Transform {
-                translation: Vec3::new(0., -window.height / 2. + SPRITE_UNITY_SIZE / 2., 0.),
-                scale: Vec3::new(window.width, SPRITE_UNITY_SIZE, 0.),
-                ..Default::default()
-            },
-            sprite: Sprite {
-                color: GREY,
-                ..Default::default()
-            },
-            ..Default::default()
-        })
+        .spawn_bundle(create_bottom_wall_sprite(window.width, window.height, unit_size, color))
         .insert(MenuEntity {});
 
-    // left paddle
     commands
-        .spawn_bundle(SpriteBundle {
-            transform: Transform {
-                translation: Vec3::new(-window.width / 2. + SPRITE_UNITY_SIZE / 2. + SPRITE_UNITY_SIZE, 0., 0.),
-                scale: Vec3::new(SPRITE_UNITY_SIZE, SPRITE_UNITY_SIZE * 4., 0.),
-                ..Default::default()
-            },
-            sprite: Sprite {
-                color: GREY,
-                ..Default::default()
-            },
-            ..Default::default()
-        })
+        .spawn_bundle(create_left_paddle_sprite(window.width, unit_size, color))
         .insert(MenuEntity {});
 
-    // right paddle
     commands
-        .spawn_bundle(SpriteBundle {
-            transform: Transform {
-                translation: Vec3::new(window.width / 2. - SPRITE_UNITY_SIZE / 2. - SPRITE_UNITY_SIZE, 0., 0.),
-                scale: Vec3::new(SPRITE_UNITY_SIZE, SPRITE_UNITY_SIZE * 4., 0.),
-                ..Default::default()
-            },
-            sprite: Sprite {
-                color: GREY,
-                ..Default::default()
-            },
-            ..Default::default()
-        })
+        .spawn_bundle(create_right_paddle_sprite(window.width, unit_size, color))
         .insert(MenuEntity {});
 
     // net
-    let mut y: f32 = 0.;
-    while y < window.height / 2. {
+    {
         commands
-            .spawn_bundle(SpriteBundle {
-                transform: Transform {
-                    translation: Vec3::new(0., y, 0.),
-                    scale: Vec3::new(SPRITE_UNITY_SIZE, SPRITE_UNITY_SIZE * 2., 0.),
-                    ..Default::default()
-                },
-                sprite: Sprite {
-                    color: GREY,
-                    ..Default::default()
-                },
-                ..Default::default()
-            })
+            .spawn_bundle(create_net_sprite(0., unit_size, color))
             .insert(MenuEntity {});
 
-        if y != 0. {
+        let mut y: f32 = unit_size * 3.;
+        while y < window.height / 2. {
             commands
-                .spawn_bundle(SpriteBundle {
-                    transform: Transform {
-                        translation: Vec3::new(0., -y, 0.),
-                        scale: Vec3::new(SPRITE_UNITY_SIZE, SPRITE_UNITY_SIZE * 2., 0.),
-                        ..Default::default()
-                    },
-                    sprite: Sprite {
-                        color: GREY,
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                })
+                .spawn_bundle(create_net_sprite(y, unit_size, color))
                 .insert(MenuEntity {});
-        }
 
-        y += SPRITE_UNITY_SIZE * 3.;
+            commands
+                .spawn_bundle(create_net_sprite(-y, unit_size, color))
+                .insert(MenuEntity {});
+
+            y += unit_size * 3.;
+        }
     }
 }
 
@@ -206,8 +145,9 @@ fn setup_title_system(
 }
 
 fn setup_copyright_system(
-    resources: Res<Resources>,
     mut commands: Commands,
+    resources: Res<Resources>,
+    sprite_config: Res<SpriteConfig>,
 ) {
     commands
         .spawn_bundle(TextBundle {
@@ -215,8 +155,8 @@ fn setup_copyright_system(
                 align_self: AlignSelf::FlexEnd,
                 position_type: PositionType::Absolute,
                 position: Rect {
-                    bottom: Val::Px(SPRITE_UNITY_SIZE + 15.),
-                    right: Val::Px(15.),
+                    bottom: Val::Px(sprite_config.unit_size * 2.),
+                    right: Val::Px(sprite_config.unit_size),
                     ..Default::default()
                 },
                 ..Default::default()
@@ -226,7 +166,7 @@ fn setup_copyright_system(
                 TextStyle {
                     font: resources.font.clone(),
                     font_size: 18.,
-                    color: GREY,
+                    color: sprite_config.color_grey,
                 },
                 Default::default(),
             ),
@@ -236,9 +176,9 @@ fn setup_copyright_system(
 }
 
 fn setup_buttons_system(
+    mut commands: Commands,
     resources: Res<Resources>,
     window: Res<WindowDescriptor>,
-    mut commands: Commands,
 ) {
     // 1 player button
     commands

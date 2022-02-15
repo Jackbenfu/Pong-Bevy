@@ -1,7 +1,9 @@
 mod config_time;
 mod config_game;
+mod config_sprite;
 mod resources;
-mod utils;
+mod helpers_system;
+mod helpers_sprite;
 mod state;
 mod menu;
 mod mode_1p;
@@ -10,6 +12,7 @@ mod mode_wall;
 
 use bevy::prelude::*;
 use config_time::*;
+use config_sprite::*;
 use resources::*;
 use menu::*;
 use mode_1p::*;
@@ -266,6 +269,7 @@ fn main() {
     App::new()
         .init_resource::<Resources>()
         .init_resource::<TimeConfig>()
+        .init_resource::<SpriteConfig>()
         .insert_resource(bevy::log::LogSettings {
             level: bevy::log::Level::DEBUG,
             filter: "info,pong_bevy=debug".to_string(),
