@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::app::*;
+use crate::state::*;
 use crate::resources::*;
 use crate::helpers_system::*;
 use crate::helpers_sprite::*;
 use crate::SpriteConfig;
-use crate::state::*;
 
 #[derive(Component)]
 struct MenuEntity {}
@@ -49,11 +49,10 @@ impl Plugin for MenuPlugin {
             .add_system_set(
                 SystemSet::on_exit(GAME_STATE)
                     .with_system(cleanup_system::<MenuEntity>)
-            )
-            .add_state(GAME_STATE);
+            );
 
         #[cfg(not(target_arch = "wasm32"))]
-            app.add_system_set(
+        app.add_system_set(
             SystemSet::on_update(GAME_STATE)
                 .with_system(click_quit_button_system)
         );
@@ -106,9 +105,10 @@ fn setup_background_system(
 }
 
 fn setup_title_system(
+    mut commands: Commands,
     resources: Res<Resources>,
     window: Res<WindowDescriptor>,
-    mut commands: Commands,
+    sprite_config: Res<SpriteConfig>,
 ) {
     commands
         .spawn_bundle(ButtonBundle {
@@ -134,7 +134,7 @@ fn setup_title_system(
                     TextStyle {
                         font: resources.font.clone(),
                         font_size: 144.,
-                        color: Color::WHITE,
+                        color: sprite_config.color_white,
                     },
                     Default::default(),
                 ),
@@ -162,7 +162,7 @@ fn setup_copyright_system(
                 ..Default::default()
             },
             text: Text::with_section(
-                "Copyright © 2022 Jackbenfu",
+                "© 2022 Jackbenfu",
                 TextStyle {
                     font: resources.font.clone(),
                     font_size: 18.,
@@ -179,6 +179,7 @@ fn setup_buttons_system(
     mut commands: Commands,
     resources: Res<Resources>,
     window: Res<WindowDescriptor>,
+    sprite_config: Res<SpriteConfig>,
 ) {
     // 1 player button
     commands
@@ -205,7 +206,7 @@ fn setup_buttons_system(
                     TextStyle {
                         font: resources.font.clone(),
                         font_size: 36.,
-                        color: Color::WHITE,
+                        color: sprite_config.color_white,
                     },
                     Default::default(),
                 ),
@@ -241,7 +242,7 @@ fn setup_buttons_system(
                     TextStyle {
                         font: resources.font.clone(),
                         font_size: 36.,
-                        color: Color::WHITE,
+                        color: sprite_config.color_white,
                     },
                     Default::default(),
                 ),
@@ -277,7 +278,7 @@ fn setup_buttons_system(
                     TextStyle {
                         font: resources.font.clone(),
                         font_size: 36.,
-                        color: Color::WHITE,
+                        color: sprite_config.color_white,
                     },
                     Default::default(),
                 ),
@@ -290,7 +291,7 @@ fn setup_buttons_system(
 
     // quit button
     #[cfg(not(target_arch = "wasm32"))]
-        commands
+    commands
         .spawn_bundle(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(256.), Val::Px(48.)),
@@ -314,7 +315,7 @@ fn setup_buttons_system(
                     TextStyle {
                         font: resources.font.clone(),
                         font_size: 36.,
-                        color: Color::WHITE,
+                        color: sprite_config.color_white,
                     },
                     Default::default(),
                 ),
@@ -330,9 +331,8 @@ fn hover_buttons_system(
     mut windows: ResMut<Windows>,
     mut interaction_query: Query<(&Interaction, &Children), With<MenuButton>>,
     mut text_query: Query<&mut Text>,
+    sprite_config: Res<SpriteConfig>,
 ) {
-    const YELLOW: Color = Color::rgb(221. / 255., 173. / 255., 29. / 255.);
-
     let window = windows.get_primary_mut().unwrap();
     let mut hovered: bool = false;
 
@@ -340,11 +340,11 @@ fn hover_buttons_system(
         let mut text = text_query.get_mut(children[0]).unwrap();
         match *interaction {
             Interaction::Hovered => {
-                text.sections[0].style.color = YELLOW;
+                text.sections[0].style.color = sprite_config.color_yellow;
                 hovered = true;
             }
             Interaction::None => {
-                text.sections[0].style.color = Color::WHITE;
+                text.sections[0].style.color = sprite_config.color_white;
             }
             _ => {}
         }
