@@ -1,11 +1,12 @@
 use bevy::prelude::*;
+
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::app::*;
+
+use crate::Config;
 use crate::state::*;
-use crate::resources::*;
 use crate::helpers_system::*;
 use crate::helpers_sprite::*;
-use crate::SpriteConfig;
 
 #[derive(Component)]
 struct MenuEntity {}
@@ -48,7 +49,7 @@ impl Plugin for MenuPlugin {
             )
             .add_system_set(
                 SystemSet::on_exit(GAME_STATE)
-                    .with_system(cleanup_system::<MenuEntity>)
+                    .with_system(cleanup_entities::<MenuEntity>)
             );
 
         #[cfg(not(target_arch = "wasm32"))]
@@ -62,10 +63,10 @@ impl Plugin for MenuPlugin {
 fn setup_background_system(
     mut commands: Commands,
     window: Res<WindowDescriptor>,
-    sprite_config: Res<SpriteConfig>,
+    config: Res<Config>,
 ) {
-    let color = sprite_config.color_grey;
-    let unit_size = sprite_config.unit_size;
+    let color = config.color_grey;
+    let unit_size = config.sprite_unit_size;
 
     commands
         .spawn_bundle(create_top_wall_sprite(window.width, window.height, unit_size, color))
@@ -83,7 +84,7 @@ fn setup_background_system(
         .spawn_bundle(create_right_paddle_sprite(window.width, unit_size, color))
         .insert(MenuEntity {});
 
-    // net
+    // Net
     {
         commands
             .spawn_bundle(create_net_sprite(0., unit_size, color))
@@ -106,9 +107,8 @@ fn setup_background_system(
 
 fn setup_title_system(
     mut commands: Commands,
-    resources: Res<Resources>,
     window: Res<WindowDescriptor>,
-    sprite_config: Res<SpriteConfig>,
+    config: Res<Config>,
 ) {
     commands
         .spawn_bundle(ButtonBundle {
@@ -132,9 +132,9 @@ fn setup_title_system(
                 text: Text::with_section(
                     "PONG",
                     TextStyle {
-                        font: resources.font.clone(),
+                        font: config.font.clone(),
                         font_size: 144.,
-                        color: sprite_config.color_white,
+                        color: config.color_white,
                     },
                     Default::default(),
                 ),
@@ -146,8 +146,7 @@ fn setup_title_system(
 
 fn setup_copyright_system(
     mut commands: Commands,
-    resources: Res<Resources>,
-    sprite_config: Res<SpriteConfig>,
+    config: Res<Config>,
 ) {
     commands
         .spawn_bundle(TextBundle {
@@ -155,8 +154,8 @@ fn setup_copyright_system(
                 align_self: AlignSelf::FlexEnd,
                 position_type: PositionType::Absolute,
                 position: Rect {
-                    bottom: Val::Px(sprite_config.unit_size * 2.),
-                    right: Val::Px(sprite_config.unit_size),
+                    bottom: Val::Px(config.sprite_unit_size * 2.),
+                    right: Val::Px(config.sprite_unit_size),
                     ..Default::default()
                 },
                 ..Default::default()
@@ -164,9 +163,9 @@ fn setup_copyright_system(
             text: Text::with_section(
                 "© 2022 Jackbenfu",
                 TextStyle {
-                    font: resources.font.clone(),
+                    font: config.font.clone(),
                     font_size: 18.,
-                    color: sprite_config.color_grey,
+                    color: config.color_grey,
                 },
                 Default::default(),
             ),
@@ -177,9 +176,8 @@ fn setup_copyright_system(
 
 fn setup_buttons_system(
     mut commands: Commands,
-    resources: Res<Resources>,
     window: Res<WindowDescriptor>,
-    sprite_config: Res<SpriteConfig>,
+    config: Res<Config>,
 ) {
     // 1 player button
     commands
@@ -204,9 +202,9 @@ fn setup_buttons_system(
                 text: Text::with_section(
                     "1 player",
                     TextStyle {
-                        font: resources.font.clone(),
+                        font: config.font.clone(),
                         font_size: 36.,
-                        color: sprite_config.color_white,
+                        color: config.color_white,
                     },
                     Default::default(),
                 ),
@@ -240,9 +238,9 @@ fn setup_buttons_system(
                 text: Text::with_section(
                     "2 players",
                     TextStyle {
-                        font: resources.font.clone(),
+                        font: config.font.clone(),
                         font_size: 36.,
-                        color: sprite_config.color_white,
+                        color: config.color_white,
                     },
                     Default::default(),
                 ),
@@ -253,7 +251,7 @@ fn setup_buttons_system(
         .insert(MenuButton {})
         .insert(MenuButton2Players {});
 
-    // wall mode button
+    // Wall mode button
     commands
         .spawn_bundle(ButtonBundle {
             style: Style {
@@ -276,9 +274,9 @@ fn setup_buttons_system(
                 text: Text::with_section(
                     "Wall mode",
                     TextStyle {
-                        font: resources.font.clone(),
+                        font: config.font.clone(),
                         font_size: 36.,
-                        color: sprite_config.color_white,
+                        color: config.color_white,
                     },
                     Default::default(),
                 ),
@@ -289,7 +287,7 @@ fn setup_buttons_system(
         .insert(MenuButton {})
         .insert(MenuButtonWallMode {});
 
-    // quit button
+    // Quit button
     #[cfg(not(target_arch = "wasm32"))]
     commands
         .spawn_bundle(ButtonBundle {
@@ -313,9 +311,9 @@ fn setup_buttons_system(
                 text: Text::with_section(
                     "Quit",
                     TextStyle {
-                        font: resources.font.clone(),
+                        font: config.font.clone(),
                         font_size: 36.,
-                        color: sprite_config.color_white,
+                        color: config.color_white,
                     },
                     Default::default(),
                 ),
@@ -331,7 +329,7 @@ fn hover_buttons_system(
     mut windows: ResMut<Windows>,
     mut interaction_query: Query<(&Interaction, &Children), With<MenuButton>>,
     mut text_query: Query<&mut Text>,
-    sprite_config: Res<SpriteConfig>,
+    config: Res<Config>,
 ) {
     let window = windows.get_primary_mut().unwrap();
     let mut hovered: bool = false;
@@ -340,11 +338,11 @@ fn hover_buttons_system(
         let mut text = text_query.get_mut(children[0]).unwrap();
         match *interaction {
             Interaction::Hovered => {
-                text.sections[0].style.color = sprite_config.color_yellow;
+                text.sections[0].style.color = config.color_yellow;
                 hovered = true;
             }
             Interaction::None => {
-                text.sections[0].style.color = sprite_config.color_white;
+                text.sections[0].style.color = config.color_white;
             }
             _ => {}
         }
@@ -357,13 +355,11 @@ fn click_1_player_button_system(
     mut state: ResMut<State<GameState>>,
     interaction_query: Query<&Interaction, With<MenuButton1Player>>,
 ) {
-    for interaction in interaction_query.iter() {
-        match *interaction {
-            Interaction::Clicked => {
-                state.set(GameState::Mode1P).unwrap();
-            }
-            _ => {}
+    match *interaction_query.single() {
+        Interaction::Clicked => {
+            state.set(GameState::Mode1P).unwrap();
         }
+        _ => {}
     }
 }
 
@@ -371,13 +367,11 @@ fn click_2_players_button_system(
     mut state: ResMut<State<GameState>>,
     interaction_query: Query<&Interaction, With<MenuButton2Players>>,
 ) {
-    for interaction in interaction_query.iter() {
-        match *interaction {
-            Interaction::Clicked => {
-                state.set(GameState::Mode2P).unwrap();
-            }
-            _ => {}
+    match *interaction_query.single() {
+        Interaction::Clicked => {
+            state.set(GameState::Mode2P).unwrap();
         }
+        _ => {}
     }
 }
 
@@ -385,13 +379,11 @@ fn click_wall_mode_button_system(
     mut state: ResMut<State<GameState>>,
     interaction_query: Query<&Interaction, With<MenuButtonWallMode>>,
 ) {
-    for interaction in interaction_query.iter() {
-        match *interaction {
-            Interaction::Clicked => {
-                state.set(GameState::ModeWall).unwrap();
-            }
-            _ => {}
+    match *interaction_query.single() {
+        Interaction::Clicked => {
+            state.set(GameState::ModeWall).unwrap();
         }
+        _ => {}
     }
 }
 
@@ -400,12 +392,10 @@ fn click_quit_button_system(
     mut app_exit_events: EventWriter<AppExit>,
     interaction_query: Query<&Interaction, With<MenuButtonQuit>>,
 ) {
-    for interaction in interaction_query.iter() {
-        match *interaction {
-            Interaction::Clicked => {
-                app_exit_events.send(AppExit);
-            }
-            _ => {}
+    match *interaction_query.single() {
+        Interaction::Clicked => {
+            app_exit_events.send(AppExit);
         }
+        _ => {}
     }
 }
