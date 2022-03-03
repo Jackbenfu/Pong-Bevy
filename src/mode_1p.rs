@@ -120,11 +120,9 @@ impl Plugin for Mode1PPlugin {
                     .with_system(cleanup_entities::<Mode1PEntity>)
             );
 
-        // TODO stop AI moves when game over
         // TODO remove warning duplicated code
         // TODO rename Player with LeftPlayer and AI with RightPlayer
-        // TODO global fixed FPS (see tip with a system from github thread)
-        // TODO vsync ?
+        // TODO put in release mode (WASM)
     }
 }
 
@@ -675,7 +673,7 @@ fn move_ai_system(
     let ball_y = ball_transform.translation.y;
     let ai_translation_y = ai_transform.translation.y;
     let dist: f32 = (ai_translation_y - ball_y).abs();
-    let rnd = random::<u32>() % (ai_transform.scale.y) as u32 + 1;
+    let rnd = random::<u32>() % (ai_transform.scale.y / 2.) as u32 + 1;
 
     if dist < rnd as f32 {
         ai_entity.velocity.y = 0.;
@@ -690,41 +688,106 @@ fn move_ai_system(
 }
 
 fn check_ball_collision_system(
-    mut ball_query: Query<(&mut Ball, &Transform)>,
-    collider_query: Query<(&Transform, &Collider)>,
+    mut ball_query: Query<(&mut Ball, &mut Transform)>,
+    collider_query: Query<(&Collider, &Transform), Without<Ball>>,
     config: Res<Config>,
 ) {
-    let (mut ball, ball_transform) = ball_query.single_mut();
+    for (collider, collider_transform) in collider_query.iter() {
+        let (mut ball, mut ball_transform) = ball_query.single_mut();
 
-    for (collider_transform, collider) in collider_query.iter() {
-        if let Some(_) = collide(
-            ball_transform.translation,
-            ball_transform.scale.truncate(),
-            collider_transform.translation,
-            collider_transform.scale.truncate(),
-        ) {
+        let bx = ball_transform.translation.x;
+        let by = ball_transform.translation.y;
+        let bwh = ball_transform.scale.x / 2.;
+        let bhh = ball_transform.scale.y / 2.;
+
+        let px = collider_transform.translation.x;
+        let py = collider_transform.translation.y;
+        let pwh = collider_transform.scale.x / 2.;
+        let phh = collider_transform.scale.y / 2.;
+
+        if !(bx - bwh >= px + pwh || bx + bwh <= px - pwh || by - bhh >= py + phh || by + bhh <= py - phh) {
+            let velocity1 = ball.velocity;
+            let v_x1 = velocity1.x;
+            let v_y1 = velocity1.y;
+
+            // Required move to go back to the position just before the collision
+            let x_to_collision = if v_x1 > 0. { (px - pwh) - (bx + bwh) } else { (px + pwh) - (bx - bwh) };
+            let y_to_collision = if v_y1 > 0. { (py - phh) - (by + bhh) } else { (py + phh) - (by - bhh) };
+
+            // Same as above expressed in percentage (value from 0 to 1)
+            let x_offset_to_collision = if 0. == v_x1 { -f32::INFINITY } else { x_to_collision / v_x1 };
+            let y_offset_to_collision = if 0. == v_y1 { -f32::INFINITY } else { y_to_collision / v_y1 };
+
+            // Collision time is the latest among the two axes
+            let collision_time = x_offset_to_collision.max(y_offset_to_collision);
+
+            // Collision normals to find on which AABB side the collision occurred
+            let normal_x: f32;
+            let normal_y: f32;
+            let collision_side: Collision;
+            if x_offset_to_collision > y_offset_to_collision {
+                normal_x = if x_to_collision < 0. { -1. } else { 1. };
+                normal_y = 0.;
+
+                collision_side = if -1. == normal_x { Collision::Left } else { Collision::Right };
+            } else {
+                normal_y = if y_to_collision < 0. { -1. } else { 1. };
+                normal_x = 0.;
+
+                collision_side = if -1. == normal_y { Collision::Top } else { Collision::Bottom };
+            }
+
+            // Position where the collision occurred
+            let x_collision = bx + v_x1 * collision_time;
+            let y_collision = by + v_y1 * collision_time;
+
+            ball_transform.translation.x = x_collision;
+            ball_transform.translation.y = y_collision;
+
+            let collision_resolved: bool;
             match *collider {
                 Collider::Paddle => {
-                    let hit_factor = (ball_transform.translation.y - collider_transform.translation.y) / collider_transform.scale.y;
+                    match collision_side {
+                        Collision::Top => { collision_resolved = false }
+                        Collision::Bottom => { collision_resolved = false }
+                        _ => {
+                            let hit_factor = (ball_transform.translation.y - collider_transform.translation.y) / collider_transform.scale.y;
 
-                    let mut new_ball_vel = Vec3::default();
-                    new_ball_vel.x = if ball.velocity.x > 0. { -1. } else { 1. };
-                    new_ball_vel.y = hit_factor * 2.;
-                    new_ball_vel = new_ball_vel.normalize();
+                            let mut new_ball_vel = Vec3::default();
+                            new_ball_vel.x = if ball.velocity.x > 0. { -1. } else { 1. };
+                            new_ball_vel.y = hit_factor * 2.;
+                            new_ball_vel = new_ball_vel.normalize();
 
-                    ball.velocity.x = new_ball_vel.x * ball.speed;
-                    ball.velocity.y = new_ball_vel.y * ball.speed;
+                            ball.velocity.x = new_ball_vel.x * ball.speed;
+                            ball.velocity.y = new_ball_vel.y * ball.speed;
 
-                    if config.game_ball_speed_max > ball.speed {
-                        ball.speed += config.game_ball_speed_incr;
+                            if config.game_ball_speed_max > ball.speed {
+                                ball.speed += config.game_ball_speed_incr;
+                            }
+
+                            collision_resolved = true;
+                        }
                     }
                 }
-                Collider::Wall => {
-                    ball.velocity.y = -ball.velocity.y;
+                _ => {
+                    collision_resolved = false
                 }
             }
 
-            break;
+            // Default behavior if collision not resolved by user
+            if !collision_resolved
+            {
+                // Setting new velocity for "bounce" effect
+                if 0. != normal_x
+                {
+                    ball.velocity.x = -v_x1;
+                }
+
+                if 0. != normal_y
+                {
+                    ball.velocity.y = -v_y1;
+                }
+            }
         }
     }
 }
