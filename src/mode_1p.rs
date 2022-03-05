@@ -1,77 +1,11 @@
-use bevy::{
-    prelude::*,
-    sprite::collide_aabb::*,
-};
-
+use bevy::prelude::*;
 use rand::*;
 
+use crate::config::*;
+use crate::systems_generic::*;
+use crate::systems_1v1::*;
+use crate::components::*;
 use crate::state::*;
-use crate::helpers_system::*;
-use crate::helpers_sprite::*;
-use crate::{Config};
-
-struct GameOverEvent(Side);
-
-#[derive(Clone, Copy, PartialEq)]
-enum Side {
-    Left,
-    Right,
-}
-
-struct GameData {
-    left_score: u32,
-    right_score: u32,
-    starting_side: Side,
-    winner: Option<Side>,
-}
-
-impl Default for GameData {
-    fn default() -> Self {
-        Self {
-            left_score: u32::default(),
-            right_score: u32::default(),
-            starting_side: Side::Left,
-            winner: None,
-        }
-    }
-}
-
-#[derive(Component)]
-struct Mode1PEntity {}
-
-#[derive(Component)]
-struct Player {
-    speed: f32,
-}
-
-#[derive(Component)]
-struct AI {
-    velocity: Vec3,
-}
-
-#[derive(Component)]
-struct Ball {
-    speed: f32,
-    velocity: Vec3,
-}
-
-#[derive(Component)]
-enum Collider {
-    Paddle,
-    Wall,
-}
-
-#[derive(Component)]
-struct Service {}
-
-#[derive(Component)]
-struct Instruction {}
-
-#[derive(Component)]
-struct LeftScore {}
-
-#[derive(Component)]
-struct RightScore {}
 
 pub struct Mode1PPlugin;
 
@@ -84,21 +18,21 @@ impl Plugin for Mode1PPlugin {
             .add_event::<GameOverEvent>()
             .add_system_set(
                 SystemSet::on_enter(GAME_STATE)
-                    .with_system(setup_game_data_system.label("setup_game_data"))
+                    .with_system(reset_game_data_system.label("reset_game_data"))
                     .with_system(setup_court_system)
                     .with_system(setup_scores_system)
                     .with_system(setup_instructions_system)
-                    .with_system(setup_player_system.label("setup_player").after("setup_game_data"))
-                    .with_system(setup_ai_system.label("setup_player").after("setup_game_data"))
-                    .with_system(setup_ball_system.after("setup_player"))
+                    .with_system(setup_left_paddle_system.label("setup_paddle").after("reset_game_data"))
+                    .with_system(setup_right_paddle_system.label("setup_paddle").after("reset_game_data"))
+                    .with_system(setup_ball_system.after("setup_paddle"))
             )
             .add_system_set(
                 SystemSet::on_update(GAME_STATE)
                     .with_system(service_system)
                     .with_system(launch_ball_system)
-                    .with_system(move_player_system)
+                    .with_system(move_left_paddle_with_keyboard_system)
                     .with_system(move_ball_system.label("move_ball"))
-                    .with_system(move_ai_system.after("move_ball"))
+                    .with_system(move_right_paddle_with_ai_system.after("move_ball"))
                     .label("move")
                     .before("back")
             )
@@ -117,175 +51,16 @@ impl Plugin for Mode1PPlugin {
             )
             .add_system_set(
                 SystemSet::on_exit(GAME_STATE)
-                    .with_system(cleanup_entities::<Mode1PEntity>)
+                    .with_system(cleanup_entities::<GameModeEntity>)
             );
-
-        // TODO remove warning duplicated code
-        // TODO rename Player with LeftPlayer and AI with RightPlayer
-        // TODO put in release mode (WASM)
     }
-}
-
-fn setup_game_data_system(
-    mut game_data: ResMut<GameData>,
-) {
-    game_data.left_score = 0;
-    game_data.right_score = 0;
-    game_data.starting_side = if random::<u32>() % 2 == 0 { Side::Left } else { Side::Right };
-    game_data.winner = None;
-}
-
-fn setup_court_system(
-    mut commands: Commands,
-    window: Res<WindowDescriptor>,
-    config: Res<Config>,
-) {
-    let color = config.color_white;
-    let unit_size = config.sprite_unit_size;
-
-    commands
-        .spawn_bundle(create_top_wall_sprite(window.width, window.height, unit_size, color))
-        .insert(Mode1PEntity {})
-        .insert(Collider::Wall);
-
-    commands
-        .spawn_bundle(create_bottom_wall_sprite(window.width, window.height, unit_size, color))
-        .insert(Mode1PEntity {})
-        .insert(Collider::Wall);
-
-    // net
-    {
-        commands
-            .spawn_bundle(create_net_sprite(0., unit_size, color))
-            .insert(Mode1PEntity {});
-
-        let mut y: f32 = unit_size * 3.;
-        while y < window.height / 2. {
-            commands
-                .spawn_bundle(create_net_sprite(y, unit_size, color))
-                .insert(Mode1PEntity {});
-
-            commands
-                .spawn_bundle(create_net_sprite(-y, unit_size, color))
-                .insert(Mode1PEntity {});
-
-            y += unit_size * 3.;
-        }
-    }
-}
-
-fn setup_scores_system(
-    mut commands: Commands,
-    config: Res<Config>,
-) {
-    // Left score
-    commands
-        .spawn_bundle(TextBundle {
-            style: Style {
-                position_type: PositionType::Absolute,
-                position: Rect {
-                    left: Val::Px(310.),
-                    top: Val::Px(48.),
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-            text: Text::with_section(
-                "0",
-                TextStyle {
-                    font: config.font.clone(),
-                    font_size: 57.,
-                    color: config.color_white,
-                },
-                Default::default(),
-            ),
-            ..Default::default()
-        })
-        .insert(Mode1PEntity {})
-        .insert(LeftScore {});
-
-    // Left score max
-    commands
-        .spawn_bundle(TextBundle {
-            style: Style {
-                position_type: PositionType::Absolute,
-                position: Rect {
-                    left: Val::Px(330.),
-                    top: Val::Px(88.),
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-            text: Text::with_section(
-                format!("/{}", config.game_score_to_win),
-                TextStyle {
-                    font: config.font.clone(),
-                    font_size: 21.,
-                    color: config.color_grey,
-                },
-                Default::default(),
-            ),
-            ..Default::default()
-        })
-        .insert(Mode1PEntity {});
-
-    // Right score
-    commands
-        .spawn_bundle(TextBundle {
-            style: Style {
-                position_type: PositionType::Absolute,
-                position: Rect {
-                    left: Val::Px(426.),
-                    top: Val::Px(48.),
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-            text: Text::with_section(
-                "0",
-                TextStyle {
-                    font: config.font.clone(),
-                    font_size: 57.,
-                    color: config.color_white,
-                },
-                Default::default(),
-            ),
-            ..Default::default()
-        })
-        .insert(Mode1PEntity {})
-        .insert(RightScore {});
-
-    // Right score max
-    commands
-        .spawn_bundle(TextBundle {
-            style: Style {
-                position_type: PositionType::Absolute,
-                position: Rect {
-                    left: Val::Px(450.),
-                    top: Val::Px(88.),
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-            text: Text::with_section(
-                format!("/{}", config.game_score_to_win),
-                TextStyle {
-                    font: config.font.clone(),
-                    font_size: 21.,
-                    color: config.color_grey,
-                },
-                Default::default(),
-            ),
-            ..Default::default()
-        })
-        .insert(Mode1PEntity {});
 }
 
 fn setup_instructions_system(
     mut commands: Commands,
     config: Res<Config>,
 ) {
-    // Goal left
+    // Goal label
     commands
         .spawn_bundle(ButtonBundle {
             style: Style {
@@ -300,7 +75,7 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: Color::rgba(0., 0., 0., 0.).into(),
+            color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -317,10 +92,10 @@ fn setup_instructions_system(
                 ..Default::default()
             });
         })
-        .insert(Mode1PEntity {})
+        .insert(GameModeEntity {})
         .insert(Instruction {});
 
-    // Goal right
+    // Goal text
     commands
         .spawn_bundle(ButtonBundle {
             style: Style {
@@ -335,7 +110,7 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: Color::rgba(0., 0., 0., 0.).into(),
+            color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -352,10 +127,10 @@ fn setup_instructions_system(
                 ..Default::default()
             });
         })
-        .insert(Mode1PEntity {})
+        .insert(GameModeEntity {})
         .insert(Instruction {});
 
-    // Command left
+    // Left paddle control label
     commands
         .spawn_bundle(ButtonBundle {
             style: Style {
@@ -370,7 +145,7 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: Color::rgba(0., 0., 0., 0.).into(),
+            color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -387,10 +162,10 @@ fn setup_instructions_system(
                 ..Default::default()
             });
         })
-        .insert(Mode1PEntity {})
+        .insert(GameModeEntity {})
         .insert(Instruction {});
 
-    // Command right
+    // Left paddle control text
     commands
         .spawn_bundle(ButtonBundle {
             style: Style {
@@ -405,7 +180,7 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: Color::rgba(0., 0., 0., 0.).into(),
+            color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -422,10 +197,10 @@ fn setup_instructions_system(
                 ..Default::default()
             });
         })
-        .insert(Mode1PEntity {})
+        .insert(GameModeEntity {})
         .insert(Instruction {});
 
-    // Launch left
+    // Launch label
     commands
         .spawn_bundle(ButtonBundle {
             style: Style {
@@ -440,7 +215,7 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: Color::rgba(0., 0., 0., 0.).into(),
+            color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -457,10 +232,10 @@ fn setup_instructions_system(
                 ..Default::default()
             });
         })
-        .insert(Mode1PEntity {})
+        .insert(GameModeEntity {})
         .insert(Instruction {});
 
-    // Launch right
+    // Launch text
     commands
         .spawn_bundle(ButtonBundle {
             style: Style {
@@ -475,7 +250,7 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: Color::rgba(0., 0., 0., 0.).into(),
+            color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -492,463 +267,43 @@ fn setup_instructions_system(
                 ..Default::default()
             });
         })
-        .insert(Mode1PEntity {})
+        .insert(GameModeEntity {})
         .insert(Instruction {});
 }
 
-fn setup_player_system(
-    mut commands: Commands,
-    window: Res<WindowDescriptor>,
-    config: Res<Config>,
-    game_data: Res<GameData>,
-) {
-    let entity = commands
-        .spawn_bundle(create_left_paddle_sprite(window.width, config.sprite_unit_size, config.color_white))
-        .insert(Mode1PEntity {})
-        .insert(Player { speed: config.game_paddle_speed })
-        .insert(Collider::Paddle)
-        .id();
-
-    if game_data.starting_side == Side::Left {
-        commands.entity(entity).insert(Service {});
-    }
-}
-
-fn setup_ai_system(
-    mut commands: Commands,
-    window: Res<WindowDescriptor>,
-    config: Res<Config>,
-    game_data: Res<GameData>,
-) {
-    let entity = commands
-        .spawn_bundle(create_right_paddle_sprite(window.width, config.sprite_unit_size, config.color_white))
-        .insert(Mode1PEntity {})
-        .insert(AI { velocity: Vec3::default() })
-        .insert(Collider::Paddle)
-        .id();
-
-    if game_data.starting_side == Side::Right {
-        commands.entity(entity).insert(Service {});
-    }
-}
-
-fn setup_ball_system(
-    mut commands: Commands,
-    config: Res<Config>,
-) {
-    commands
-        .spawn_bundle(create_ball_sprite(config.sprite_unit_size, config.color_yellow))
-        .insert(Mode1PEntity {})
-        .insert(Ball { speed: config.game_ball_speed_min, velocity: Vec3::default() });
-}
-
-fn service_system(
-    mut ball_query: Query<&mut Transform, With<Ball>>,
-    paddle_query: Query<(&Transform, Option<&Player>, Option<&AI>), (With<Service>, Without<Ball>)>,
-) {
-    let paddle = paddle_query.get_single();
-    if !paddle.is_ok() {
-        // No serving paddle
-        return;
-    }
-
-    let (paddle_transform, player, ai) = paddle.unwrap();
-    let mut ball_transform = ball_query.single_mut();
-
-    ball_transform.translation.y = paddle_transform.translation.y;
-
-    if let Some(_) = player {
-        ball_transform.translation.x = paddle_transform.translation.x + paddle_transform.scale.x + 2.;
-    } else if let Some(_) = ai {
-        ball_transform.translation.x = paddle_transform.translation.x - paddle_transform.scale.x - 2.;
-    }
-}
-
-fn launch_ball_system(
-    mut commands: Commands,
-    mut ball_query: Query<&mut Ball, With<Ball>>,
-    paddle_query: Query<(Entity, Option<&Player>, Option<&AI>), With<Service>>,
-    instructions_query: Query<Entity, With<Instruction>>,
-    keyboard: Res<Input<KeyCode>>,
-    game_data: Res<GameData>,
-) {
-    if game_data.winner.is_some() {
-        return;
-    }
-
-    if !keyboard.just_released(KeyCode::Space) {
-        return;
-    }
-
-    let paddle = paddle_query.get_single();
-    if paddle.is_err() {
-        // Already launched?
-        return;
-    }
-
-    let (paddle_entity, player, ai) = paddle.unwrap();
-    let mut ball = ball_query.single_mut();
-
-    if random::<i32>() % 2 == 0 {
-        ball.velocity.y = -0.25;
-    } else {
-        ball.velocity.y = 0.25;
-    }
-
-    if let Some(_) = player {
-        ball.velocity.x = 1.;
-    } else if let Some(_) = ai {
-        ball.velocity.x = -1.;
-    }
-
-    ball.velocity = ball.velocity.normalize();
-    ball.velocity.x *= ball.speed;
-    ball.velocity.y *= ball.speed;
-
-    commands.entity(paddle_entity).remove::<Service>();
-
-    // Also hide instructions
-    for instruction_entity in instructions_query.iter() {
-        commands.entity(instruction_entity).despawn_recursive();
-    }
-}
-
-fn move_player_system(
-    mut player_query: Query<(&Player, &mut Transform)>,
-    keyboard: Res<Input<KeyCode>>,
-    window: Res<WindowDescriptor>,
-    time: Res<Time>,
-    config: Res<Config>,
-) {
-    let mut direction = 0.;
-
-    if keyboard.pressed(KeyCode::S) {
-        direction += 1.;
-    }
-
-    if keyboard.pressed(KeyCode::X) {
-        direction -= 1.;
-    }
-
-    let (player_entity, mut player_transform) = player_query.single_mut();
-    let bound_y = window.height / 2. - config.sprite_unit_size - player_transform.scale.y / 2.;
-
-    let translation = &mut player_transform.translation;
-    translation.y += direction * player_entity.speed * time.delta_seconds();
-    translation.y = translation.y.min(bound_y).max(-bound_y);
-}
-
-fn move_ball_system(
-    mut ball_query: Query<(&Ball, &mut Transform)>,
-    time: Res<Time>,
-) {
-    let (ball, mut transform) = ball_query.single_mut();
-    let velocity = ball.velocity;
-
-    if velocity.x != 0. || velocity.y != 0. {
-        transform.translation += velocity * time.delta_seconds();
-    }
-}
-
-fn move_ai_system(
-    mut ai_query: Query<(&mut AI, &mut Transform), Without<Ball>>,
+fn move_right_paddle_with_ai_system(
+    mut paddle_query: Query<(&mut RightPaddle, &mut Transform), Without<Ball>>,
     ball_query: Query<(&Ball, &Transform)>,
     window: Res<WindowDescriptor>,
     time: Res<Time>,
     config: Res<Config>,
 ) {
     let (ball, ball_transform) = ball_query.single();
-    let (mut ai_entity, mut ai_transform) = ai_query.single_mut();
+    let (mut paddle_entity, mut paddle_transform) = paddle_query.single_mut();
 
     if ball.velocity.x <= 0. {
-        ai_entity.velocity.y = 0.;
+        paddle_entity.velocity.y = 0.;
         return;
     }
 
     if ball_transform.translation.x > window.width / 2. {
-        ai_entity.velocity.y = 0.;
+        paddle_entity.velocity.y = 0.;
         return;
     }
 
     let ball_y = ball_transform.translation.y;
-    let ai_translation_y = ai_transform.translation.y;
-    let dist: f32 = (ai_translation_y - ball_y).abs();
-    let rnd = random::<u32>() % (ai_transform.scale.y / 2.) as u32 + 1;
+    let paddle_translation_y = paddle_transform.translation.y;
+    let dist: f32 = (paddle_translation_y - ball_y).abs();
+    let rnd = random::<u32>() % (paddle_transform.scale.y / 2.) as u32 + 1;
 
     if dist < rnd as f32 {
-        ai_entity.velocity.y = 0.;
+        paddle_entity.velocity.y = 0.;
         return;
     }
 
-    let dir = if ball_y > ai_translation_y { config.game_paddle_speed } else { -config.game_paddle_speed };
-    let bound_y = window.height / 2. - config.sprite_unit_size - ai_transform.scale.y / 2.;
+    let dir = if ball_y > paddle_translation_y { config.game_paddle_speed } else { -config.game_paddle_speed };
+    let bound_y = window.height / 2. - config.sprite_unit_size - paddle_transform.scale.y / 2.;
 
-    ai_transform.translation.y += dir * time.delta_seconds();
-    ai_transform.translation.y = ai_transform.translation.y.min(bound_y).max(-bound_y);
-}
-
-fn check_ball_collision_system(
-    mut ball_query: Query<(&mut Ball, &mut Transform)>,
-    collider_query: Query<(&Collider, &Transform), Without<Ball>>,
-    config: Res<Config>,
-) {
-    for (collider, collider_transform) in collider_query.iter() {
-        let (mut ball, mut ball_transform) = ball_query.single_mut();
-
-        let bx = ball_transform.translation.x;
-        let by = ball_transform.translation.y;
-        let bwh = ball_transform.scale.x / 2.;
-        let bhh = ball_transform.scale.y / 2.;
-
-        let px = collider_transform.translation.x;
-        let py = collider_transform.translation.y;
-        let pwh = collider_transform.scale.x / 2.;
-        let phh = collider_transform.scale.y / 2.;
-
-        if !(bx - bwh >= px + pwh || bx + bwh <= px - pwh || by - bhh >= py + phh || by + bhh <= py - phh) {
-            let velocity1 = ball.velocity;
-            let v_x1 = velocity1.x;
-            let v_y1 = velocity1.y;
-
-            // Required move to go back to the position just before the collision
-            let x_to_collision = if v_x1 > 0. { (px - pwh) - (bx + bwh) } else { (px + pwh) - (bx - bwh) };
-            let y_to_collision = if v_y1 > 0. { (py - phh) - (by + bhh) } else { (py + phh) - (by - bhh) };
-
-            // Same as above expressed in percentage (value from 0 to 1)
-            let x_offset_to_collision = if 0. == v_x1 { -f32::INFINITY } else { x_to_collision / v_x1 };
-            let y_offset_to_collision = if 0. == v_y1 { -f32::INFINITY } else { y_to_collision / v_y1 };
-
-            // Collision time is the latest among the two axes
-            let collision_time = x_offset_to_collision.max(y_offset_to_collision);
-
-            // Collision normals to find on which AABB side the collision occurred
-            let normal_x: f32;
-            let normal_y: f32;
-            let collision_side: Collision;
-            if x_offset_to_collision > y_offset_to_collision {
-                normal_x = if x_to_collision < 0. { -1. } else { 1. };
-                normal_y = 0.;
-
-                collision_side = if -1. == normal_x { Collision::Left } else { Collision::Right };
-            } else {
-                normal_y = if y_to_collision < 0. { -1. } else { 1. };
-                normal_x = 0.;
-
-                collision_side = if -1. == normal_y { Collision::Top } else { Collision::Bottom };
-            }
-
-            // Position where the collision occurred
-            let x_collision = bx + v_x1 * collision_time;
-            let y_collision = by + v_y1 * collision_time;
-
-            ball_transform.translation.x = x_collision;
-            ball_transform.translation.y = y_collision;
-
-            let collision_resolved: bool;
-            match *collider {
-                Collider::Paddle => {
-                    match collision_side {
-                        Collision::Top => { collision_resolved = false }
-                        Collision::Bottom => { collision_resolved = false }
-                        _ => {
-                            let hit_factor = (ball_transform.translation.y - collider_transform.translation.y) / collider_transform.scale.y;
-
-                            let mut new_ball_vel = Vec3::default();
-                            new_ball_vel.x = if ball.velocity.x > 0. { -1. } else { 1. };
-                            new_ball_vel.y = hit_factor * 2.;
-                            new_ball_vel = new_ball_vel.normalize();
-
-                            ball.velocity.x = new_ball_vel.x * ball.speed;
-                            ball.velocity.y = new_ball_vel.y * ball.speed;
-
-                            if config.game_ball_speed_max > ball.speed {
-                                ball.speed += config.game_ball_speed_incr;
-                            }
-
-                            collision_resolved = true;
-                        }
-                    }
-                }
-                _ => {
-                    collision_resolved = false
-                }
-            }
-
-            // Default behavior if collision not resolved by user
-            if !collision_resolved
-            {
-                // Setting new velocity for "bounce" effect
-                if 0. != normal_x
-                {
-                    ball.velocity.x = -v_x1;
-                }
-
-                if 0. != normal_y
-                {
-                    ball.velocity.y = -v_y1;
-                }
-            }
-        }
-    }
-}
-
-fn check_ball_out_system(
-    mut commands: Commands,
-    mut game_over_event: EventWriter<GameOverEvent>,
-    mut ball_query: Query<(&mut Ball, &Transform)>,
-    mut left_player_query: Query<(Entity, &mut Transform), (With<Player>, Without<AI>, Without<Ball>)>,
-    mut right_player_query: Query<(Entity, &mut Transform), (With<AI>, Without<Player>, Without<Ball>)>,
-    mut left_score_query: Query<&mut Text, (With<LeftScore>, Without<RightScore>)>,
-    mut right_score_query: Query<&mut Text, (With<RightScore>, Without<LeftScore>)>,
-    mut game_data: ResMut<GameData>,
-    window: Res<WindowDescriptor>,
-    config: Res<Config>,
-) {
-    if game_data.winner.is_some() {
-        return;
-    }
-
-    let mut ball_out = false;
-
-    let (mut ball, ball_transform) = ball_query.single_mut();
-    let (right_player_entity, mut right_player_transform) = right_player_query.single_mut();
-    let (left_player_entity, mut left_player_transform) = left_player_query.single_mut();
-
-    if ball_transform.translation.x < -window.width / 2. - config.game_ball_oob_x {
-        game_data.right_score += 1;
-
-        if game_data.right_score == config.game_score_to_win {
-            game_data.winner = Some(Side::Right);
-        } else {
-            commands.entity(right_player_entity).insert(Service {});
-        }
-
-        right_score_query.single_mut().sections[0].value = format!("{}", game_data.right_score);
-        ball_out = true;
-    } else if ball_transform.translation.x > window.width / 2. + config.game_ball_oob_x {
-        game_data.left_score += 1;
-
-        if game_data.left_score == config.game_score_to_win {
-            game_data.winner = Some(Side::Left);
-        } else {
-            commands.entity(left_player_entity).insert(Service {});
-        }
-
-        left_score_query.single_mut().sections[0].value = format!("{}", game_data.left_score);
-        ball_out = true;
-    }
-
-    match &game_data.winner {
-        None => {
-            if ball_out {
-                left_player_transform.translation.y = 0.;
-                right_player_transform.translation.y = 0.;
-                ball.velocity = Vec3::default();
-            }
-        }
-        Some(side) => {
-            game_over_event.send(GameOverEvent(*side))
-        }
-    }
-}
-
-fn game_over_system(
-    mut commands: Commands,
-    mut game_over_event: EventReader<GameOverEvent>,
-    config: Res<Config>,
-) {
-    const WIN_TEXT: &str = "WIN";
-    const LOSE_TEXT: &str = "LOSE";
-
-    for event in game_over_event.iter() {
-        let left_text: &str;
-        let right_text: &str;
-        let left_color: Color;
-        let right_color: Color;
-
-        match event.0 {
-            Side::Left => {
-                left_text = WIN_TEXT;
-                right_text = LOSE_TEXT;
-                left_color = config.color_green;
-                right_color = config.color_red;
-            }
-            Side::Right => {
-                left_text = LOSE_TEXT;
-                right_text = WIN_TEXT;
-                left_color = config.color_red;
-                right_color = config.color_green;
-            }
-        }
-
-        // Left
-        commands
-            .spawn_bundle(ButtonBundle {
-                style: Style {
-                    size: Size::new(Val::Px(352.), Val::Px(48.)),
-                    position: Rect {
-                        bottom: Val::Px(186.),
-                        left: Val::Px(0.),
-                        ..Default::default()
-                    },
-                    position_type: PositionType::Absolute,
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    ..Default::default()
-                },
-                color: Color::rgba(0., 0., 0., 0.).into(),
-                ..Default::default()
-            })
-            .with_children(|parent| {
-                parent.spawn_bundle(TextBundle {
-                    text: Text::with_section(
-                        left_text,
-                        TextStyle {
-                            font: config.font.clone(),
-                            font_size: 66.,
-                            color: left_color,
-                        },
-                        Default::default(),
-                    ),
-                    ..Default::default()
-                });
-            })
-            .insert(Mode1PEntity {});
-
-        // Right
-        commands
-            .spawn_bundle(ButtonBundle {
-                style: Style {
-                    size: Size::new(Val::Px(352.), Val::Px(48.)),
-                    position: Rect {
-                        bottom: Val::Px(186.),
-                        left: Val::Px(416.),
-                        ..Default::default()
-                    },
-                    position_type: PositionType::Absolute,
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    ..Default::default()
-                },
-                color: Color::rgba(0., 0., 0., 0.).into(),
-                ..Default::default()
-            })
-            .with_children(|parent| {
-                parent.spawn_bundle(TextBundle {
-                    text: Text::with_section(
-                        right_text,
-                        TextStyle {
-                            font: config.font.clone(),
-                            font_size: 66.,
-                            color: right_color,
-                        },
-                        Default::default(),
-                    ),
-                    ..Default::default()
-                });
-            })
-            .insert(Mode1PEntity {});
-
-        break; // We only take the first event
-    }
+    paddle_transform.translation.y += dir * time.delta_seconds();
+    paddle_transform.translation.y = paddle_transform.translation.y.min(bound_y).max(-bound_y);
 }

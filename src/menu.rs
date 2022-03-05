@@ -3,9 +3,9 @@ use bevy::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::app::*;
 
-use crate::Config;
+use crate::config::*;
+use crate::systems_generic::*;
 use crate::state::*;
-use crate::helpers_system::*;
 use crate::helpers_sprite::*;
 
 #[derive(Component)]
@@ -124,7 +124,7 @@ fn setup_title_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: Color::rgba(0., 0., 0., 0.).into(),
+            color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -194,7 +194,7 @@ fn setup_buttons_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: Color::rgba(0., 0., 0., 0.).into(),
+            color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -230,7 +230,7 @@ fn setup_buttons_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: Color::rgba(0., 0., 0., 0.).into(),
+            color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -266,7 +266,7 @@ fn setup_buttons_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: Color::rgba(0., 0., 0., 0.).into(),
+            color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -303,7 +303,7 @@ fn setup_buttons_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: Color::rgba(0., 0., 0., 0.).into(),
+            color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {

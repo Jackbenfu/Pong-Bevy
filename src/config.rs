@@ -11,6 +11,7 @@ pub struct Config {
 
     pub sprite_unit_size: f32,
 
+    pub color_transparent: Color,
     pub color_white: Color,
     pub color_grey: Color,
     pub color_yellow: Color,
@@ -30,6 +31,7 @@ impl Default for Config {
             game_ball_oob_x: f32::default(),
             game_score_to_win: u32::default(),
             sprite_unit_size: f32::default(),
+            color_transparent: Color::default(),
             color_white: Color::default(),
             color_grey: Color::default(),
             color_yellow: Color::default(),

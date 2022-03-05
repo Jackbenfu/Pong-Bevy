@@ -1,7 +1,9 @@
 mod config;
-mod helpers_system;
-mod helpers_sprite;
+mod systems_generic;
+mod systems_1v1;
+mod components;
 mod state;
+mod helpers_sprite;
 mod menu;
 mod mode_1p;
 mod mode_2p;
@@ -9,12 +11,11 @@ mod mode_wall;
 
 use bevy::prelude::*;
 use config::*;
+use state::*;
 use menu::*;
 use mode_1p::*;
 use mode_2p::*;
 use mode_wall::*;
-
-use crate::state::GameState;
 
 fn setup_system(
     mut commands: Commands,
@@ -34,6 +35,7 @@ fn setup_system(
 
     config.sprite_unit_size = 16.;
 
+    config.color_transparent = Color::rgba_u8(0, 0, 0, 0);
     config.color_white = Color::WHITE;
     config.color_grey = Color::rgb_u8(100, 100, 100);
     config.color_yellow = Color::rgb_u8(221, 173, 29);
@@ -42,6 +44,9 @@ fn setup_system(
 
     config.font = asset_server.load("fonts/Volter__28Goldfish_29.ttf");
 }
+
+// TODO sounds
+// TODO put in release mode (WASM)
 
 fn main() {
     #[cfg(target_arch = "wasm32")]
