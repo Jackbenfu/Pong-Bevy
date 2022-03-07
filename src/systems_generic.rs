@@ -48,6 +48,7 @@ pub fn move_ball_system(
 
 pub fn check_ball_collision_system(
     mut ball_query: Query<(&mut Ball, &mut Transform)>,
+    mut ball_hit_paddle_event: EventWriter<BallHitPaddleEvent>,
     collider_query: Query<(&Collider, &Transform), Without<Ball>>,
     config: Res<Config>,
 ) {
@@ -107,8 +108,14 @@ pub fn check_ball_collision_system(
             match *collider {
                 Collider::Paddle => {
                     match collision_side {
-                        Collision::Top => { collision_resolved = false }
-                        Collision::Bottom => { collision_resolved = false }
+                        Collision::Top => {
+                            collision_resolved = false;
+                            ball_hit_paddle_event.send(BallHitPaddleEvent());
+                        }
+                        Collision::Bottom => {
+                            collision_resolved = false;
+                            ball_hit_paddle_event.send(BallHitPaddleEvent());
+                        }
                         _ => {
                             let hit_factor = (ball_transform.translation.y - collider_transform.translation.y) / collider_transform.scale.y;
 
@@ -125,6 +132,8 @@ pub fn check_ball_collision_system(
                             }
 
                             collision_resolved = true;
+
+                            ball_hit_paddle_event.send(BallHitPaddleEvent());
                         }
                     }
                 }
@@ -152,66 +161,25 @@ pub fn check_ball_collision_system(
 }
 
 pub fn check_ball_out_system(
-    mut commands: Commands,
-    mut game_over_event: EventWriter<GameOverEvent>,
-    mut ball_query: Query<(&mut Ball, &Transform)>,
-    mut left_paddle_query: Query<(Entity, &mut Transform), (With<LeftPaddle>, Without<RightPaddle>, Without<Ball>)>,
-    mut right_paddle_query: Query<(Entity, &mut Transform), (With<RightPaddle>, Without<LeftPaddle>, Without<Ball>)>,
-    mut left_score_query: Query<&mut Text, (With<LeftScore>, Without<RightScore>)>,
-    mut right_score_query: Query<&mut Text, (With<RightScore>, Without<LeftScore>)>,
-    mut game_data: ResMut<GameData>,
+    mut ball_out_event: EventWriter<BallOutEvent>,
+    mut ball_query: Query<&Transform, With<Ball>>,
     window: Res<WindowDescriptor>,
     config: Res<Config>,
+    game_data: Res<GameData>,
 ) {
     if game_data.game_over.is_some() {
         return;
     }
 
-    let mut ball_out = false;
-
-    let (mut ball, ball_transform) = ball_query.single_mut();
-    let (right_paddle_entity, mut right_paddle_transform) = right_paddle_query.single_mut();
-    let (left_paddle_entity, mut left_paddle_transform) = left_paddle_query.single_mut();
+    let ball_transform = ball_query.single_mut();
 
     if ball_transform.translation.x < -window.width / 2. - config.game_ball_oob_x {
-        game_data.right_score += 1;
-
-        if game_data.right_score == config.game_score_to_win {
-            game_data.game_over = Some(Side::Right);
-        } else {
-            commands.entity(right_paddle_entity).insert(Service {});
-        }
-
-        right_score_query.single_mut().sections[0].value = format!("{}", game_data.right_score);
-        ball_out = true;
+        ball_out_event.send(BallOutEvent(Side::Left));
     } else if ball_transform.translation.x > window.width / 2. + config.game_ball_oob_x {
-        game_data.left_score += 1;
-
-        if game_data.left_score == config.game_score_to_win {
-            game_data.game_over = Some(Side::Left);
-        } else {
-            commands.entity(left_paddle_entity).insert(Service {});
-        }
-
-        left_score_query.single_mut().sections[0].value = format!("{}", game_data.left_score);
-        ball_out = true;
-    }
-
-    match &game_data.game_over {
-        None => {
-            if ball_out {
-                left_paddle_transform.translation.y = 0.;
-                right_paddle_transform.translation.y = 0.;
-                ball.velocity = Vec3::default();
-            }
-        }
-        Some(side) => {
-            game_over_event.send(GameOverEvent(*side))
-        }
+        ball_out_event.send(BallOutEvent(Side::Right));
     }
 }
 
-/// Despawns all entities that have a component of type T.
 pub fn cleanup_entities<T: Component>(
     mut commands: Commands,
     query: Query<Entity, With<T>>,
@@ -221,7 +189,6 @@ pub fn cleanup_entities<T: Component>(
     }
 }
 
-/// Navigates from game modes to main menu with Escape key.
 pub fn back_to_menu_system(
     mut state: ResMut<State<GameState>>,
     mut keyboard_input_events: EventReader<KeyboardInput>,

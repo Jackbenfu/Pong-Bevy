@@ -15,6 +15,8 @@ impl Plugin for Mode2PPlugin {
         app
             .init_resource::<GameData>()
             .add_event::<GameOverEvent>()
+            .add_event::<BallOutEvent>()
+            .add_event::<BallHitPaddleEvent>()
             .add_system_set(
                 SystemSet::on_enter(GAME_STATE)
                     .with_system(reset_game_data_system.label("reset_game_data"))
@@ -38,13 +40,14 @@ impl Plugin for Mode2PPlugin {
             .add_system_set(
                 SystemSet::on_update(GAME_STATE)
                     .with_system(check_ball_collision_system)
-                    .with_system(check_ball_out_system)
-                    .with_system(game_over_system)
+                    .with_system(check_ball_out_system.label("check_ball_out"))
+                    .with_system(increment_score_system.label("increment_score").after("check_ball_out"))
+                    .with_system(check_game_over_system.after("increment_score"))
                     .after("move")
                     .before("back")
             )
             .add_system_set(
-                SystemSet::on_update(GameState::Mode2P)
+                SystemSet::on_update(GAME_STATE)
                     .with_system(back_to_menu_system)
                     .label("back")
             )

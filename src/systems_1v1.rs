@@ -5,7 +5,6 @@ use crate::config::*;
 use crate::components::*;
 use crate::helpers_sprite::*;
 
-/// Resets game data to default values.
 pub fn reset_game_data_system(
     mut game_data: ResMut<GameData>,
 ) {
@@ -15,7 +14,6 @@ pub fn reset_game_data_system(
     game_data.game_over = None;
 }
 
-/// Builds the court for 1v1 modes (1P and 2P).
 pub fn setup_court_system(
     mut commands: Commands,
     window: Res<WindowDescriptor>,
@@ -55,7 +53,6 @@ pub fn setup_court_system(
     }
 }
 
-/// Builds the scores for 1v1 modes (1P and 2P).
 pub fn setup_scores_system(
     mut commands: Commands,
     config: Res<Config>,
@@ -99,7 +96,7 @@ pub fn setup_scores_system(
                 ..Default::default()
             },
             text: Text::with_section(
-                format!("/{}", config.game_score_to_win),
+                format!("/{}", config.game_1v1_score_to_win),
                 TextStyle {
                     font: config.font.clone(),
                     font_size: 21.,
@@ -150,7 +147,7 @@ pub fn setup_scores_system(
                 ..Default::default()
             },
             text: Text::with_section(
-                format!("/{}", config.game_score_to_win),
+                format!("/{}", config.game_1v1_score_to_win),
                 TextStyle {
                     font: config.font.clone(),
                     font_size: 21.,
@@ -204,7 +201,7 @@ pub fn setup_ball_system(
     config: Res<Config>,
 ) {
     commands
-        .spawn_bundle(create_ball_sprite(config.sprite_unit_size, config.color_yellow))
+        .spawn_bundle(create_ball_sprite(config.sprite_unit_size, Vec3::default(), config.color_yellow))
         .insert(GameModeEntity {})
         .insert(Ball { speed: config.game_ball_speed_min, velocity: Vec3::default() });
 }
@@ -280,103 +277,167 @@ pub fn launch_ball_system(
     }
 }
 
-pub fn game_over_system(
+pub fn increment_score_system(
+    mut ball_out_event: EventReader<BallOutEvent>,
+    mut left_score_query: Query<&mut Text, (With<LeftScore>, Without<RightScore>)>,
+    mut right_score_query: Query<&mut Text, (With<RightScore>, Without<LeftScore>)>,
+    mut game_data: ResMut<GameData>,
+) {
+    if game_data.game_over.is_some() {
+        return;
+    }
+
+    for event in ball_out_event.iter() {
+        match event.0 {
+            Side::Left => {
+                game_data.right_score += 1;
+                right_score_query.single_mut().sections[0].value = format!("{}", game_data.right_score);
+            }
+            Side::Right => {
+                game_data.left_score += 1;
+                left_score_query.single_mut().sections[0].value = format!("{}", game_data.left_score);
+            }
+        }
+    }
+}
+
+pub fn check_game_over_system(
     mut commands: Commands,
-    mut game_over_event: EventReader<GameOverEvent>,
+    mut ball_out_event: EventReader<BallOutEvent>,
+    mut game_over_event: EventWriter<GameOverEvent>,
+    mut ball_query: Query<&mut Ball>,
+    mut left_paddle_query: Query<(Entity, &mut Transform), (With<LeftPaddle>, Without<RightPaddle>, Without<Ball>)>,
+    mut right_paddle_query: Query<(Entity, &mut Transform), (With<RightPaddle>, Without<LeftPaddle>, Without<Ball>)>,
+    mut game_data: ResMut<GameData>,
     config: Res<Config>,
 ) {
-    const WIN_TEXT: &str = "WIN";
-    const LOSE_TEXT: &str = "LOSE";
+    if game_data.game_over.is_some() {
+        return;
+    }
 
-    for event in game_over_event.iter() {
-        let left_text: &str;
-        let right_text: &str;
-        let left_color: Color;
-        let right_color: Color;
+    for event in ball_out_event.iter() {
+        let mut ball = ball_query.single_mut();
+        let (right_paddle_entity, mut right_paddle_transform) = right_paddle_query.single_mut();
+        let (left_paddle_entity, mut left_paddle_transform) = left_paddle_query.single_mut();
+
+        let mut game_over = false;
 
         match event.0 {
             Side::Left => {
-                left_text = WIN_TEXT;
-                right_text = LOSE_TEXT;
-                left_color = config.color_green;
-                right_color = config.color_red;
+                if game_data.right_score == config.game_1v1_score_to_win {
+                    game_data.game_over = Some(Side::Right);
+                    game_over_event.send(GameOverEvent(Side::Right));
+                    game_over = true;
+                } else {
+                    commands.entity(right_paddle_entity).insert(Service {});
+                }
             }
             Side::Right => {
-                left_text = LOSE_TEXT;
-                right_text = WIN_TEXT;
-                left_color = config.color_red;
-                right_color = config.color_green;
+                if game_data.left_score == config.game_1v1_score_to_win {
+                    game_data.game_over = Some(Side::Left);
+                    game_over_event.send(GameOverEvent(Side::Left));
+                    game_over = true;
+                } else {
+                    commands.entity(left_paddle_entity).insert(Service {});
+                }
             }
         }
 
-        // Left
-        commands
-            .spawn_bundle(ButtonBundle {
-                style: Style {
-                    size: Size::new(Val::Px(352.), Val::Px(48.)),
-                    position: Rect {
-                        bottom: Val::Px(186.),
-                        left: Val::Px(0.),
+        if !game_over {
+            left_paddle_transform.translation.y = 0.;
+            right_paddle_transform.translation.y = 0.;
+            ball.velocity = Vec3::default();
+        } else {
+            const WIN_TEXT: &str = "WIN";
+            const LOSE_TEXT: &str = "LOSE";
+
+            let left_text: &str;
+            let right_text: &str;
+            let left_color: Color;
+            let right_color: Color;
+
+            match event.0 {
+                Side::Left => {
+                    left_text = WIN_TEXT;
+                    right_text = LOSE_TEXT;
+                    left_color = config.color_green;
+                    right_color = config.color_red;
+                }
+                Side::Right => {
+                    left_text = LOSE_TEXT;
+                    right_text = WIN_TEXT;
+                    left_color = config.color_red;
+                    right_color = config.color_green;
+                }
+            }
+
+            // Left
+            commands
+                .spawn_bundle(ButtonBundle {
+                    style: Style {
+                        size: Size::new(Val::Px(352.), Val::Px(48.)),
+                        position: Rect {
+                            bottom: Val::Px(186.),
+                            left: Val::Px(0.),
+                            ..Default::default()
+                        },
+                        position_type: PositionType::Absolute,
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
                         ..Default::default()
                     },
-                    position_type: PositionType::Absolute,
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
+                    color: config.color_transparent.into(),
                     ..Default::default()
-                },
-                color: config.color_transparent.into(),
-                ..Default::default()
-            })
-            .with_children(|parent| {
-                parent.spawn_bundle(TextBundle {
-                    text: Text::with_section(
-                        left_text,
-                        TextStyle {
-                            font: config.font.clone(),
-                            font_size: 66.,
-                            color: left_color,
-                        },
-                        Default::default(),
-                    ),
-                    ..Default::default()
-                });
-            })
-            .insert(GameModeEntity {});
+                })
+                .with_children(|parent| {
+                    parent.spawn_bundle(TextBundle {
+                        text: Text::with_section(
+                            left_text,
+                            TextStyle {
+                                font: config.font.clone(),
+                                font_size: 66.,
+                                color: left_color,
+                            },
+                            Default::default(),
+                        ),
+                        ..Default::default()
+                    });
+                })
+                .insert(GameModeEntity {});
 
-        // Right
-        commands
-            .spawn_bundle(ButtonBundle {
-                style: Style {
-                    size: Size::new(Val::Px(352.), Val::Px(48.)),
-                    position: Rect {
-                        bottom: Val::Px(186.),
-                        left: Val::Px(416.),
+            // Right
+            commands
+                .spawn_bundle(ButtonBundle {
+                    style: Style {
+                        size: Size::new(Val::Px(352.), Val::Px(48.)),
+                        position: Rect {
+                            bottom: Val::Px(186.),
+                            left: Val::Px(416.),
+                            ..Default::default()
+                        },
+                        position_type: PositionType::Absolute,
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
                         ..Default::default()
                     },
-                    position_type: PositionType::Absolute,
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
+                    color: config.color_transparent.into(),
                     ..Default::default()
-                },
-                color: config.color_transparent.into(),
-                ..Default::default()
-            })
-            .with_children(|parent| {
-                parent.spawn_bundle(TextBundle {
-                    text: Text::with_section(
-                        right_text,
-                        TextStyle {
-                            font: config.font.clone(),
-                            font_size: 66.,
-                            color: right_color,
-                        },
-                        Default::default(),
-                    ),
-                    ..Default::default()
-                });
-            })
-            .insert(GameModeEntity {});
-
-        break; // We only take the first event
+                })
+                .with_children(|parent| {
+                    parent.spawn_bundle(TextBundle {
+                        text: Text::with_section(
+                            right_text,
+                            TextStyle {
+                                font: config.font.clone(),
+                                font_size: 66.,
+                                color: right_color,
+                            },
+                            Default::default(),
+                        ),
+                        ..Default::default()
+                    });
+                })
+                .insert(GameModeEntity {});
+        }
     }
 }

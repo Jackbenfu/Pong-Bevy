@@ -2,6 +2,13 @@ use bevy::prelude::*;
 
 use crate::Vec3;
 
+pub struct GameOverEvent(pub Side);
+
+pub struct BallOutEvent(pub Side);
+
+pub struct BallHitPaddleEvent();
+
+#[derive(Default)]
 pub struct GameData {
     pub left_score: u32,
     pub right_score: u32,
@@ -9,21 +16,6 @@ pub struct GameData {
     pub game_over: Option<Side>,
 }
 
-impl Default for GameData {
-    fn default() -> Self {
-        Self {
-            left_score: u32::default(),
-            right_score: u32::default(),
-            starting_side: Side::Left,
-            game_over: None,
-        }
-    }
-}
-
-/// Event sent when a game mode ends.
-pub struct GameOverEvent(pub Side);
-
-/// Added to all entites in game modes (used to properly despawn them on exit).
 #[derive(Component)]
 pub struct GameModeEntity {}
 
@@ -33,13 +25,17 @@ pub enum Side {
     Right,
 }
 
-/// Left player, always controlled by human.
+impl Default for Side {
+    fn default() -> Self {
+        Side::Left
+    }
+}
+
 #[derive(Component)]
 pub struct LeftPaddle {
     pub speed: f32,
 }
 
-/// Right player, controlled by either AI or human.
 #[derive(Component)]
 pub struct RightPaddle {
     /// For AI control.
@@ -48,21 +44,18 @@ pub struct RightPaddle {
     pub speed: f32,
 }
 
-/// Ball data.
 #[derive(Component)]
 pub struct Ball {
     pub speed: f32,
     pub velocity: Vec3,
 }
 
-/// Types of colliders.
 #[derive(Component)]
 pub enum Collider {
     Paddle,
     Wall,
 }
 
-/// Added to the paddle to serve.
 #[derive(Component)]
 pub struct Service {}
 

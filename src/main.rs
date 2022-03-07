@@ -30,11 +30,11 @@ fn setup_system(
     config.game_ball_speed_max = 750.;
     config.game_ball_speed_incr = 5.;
     config.game_ball_oob_x = 200.;
-
-    config.game_score_to_win = 9;
+    config.game_1v1_score_to_win = 2;
 
     config.sprite_unit_size = 16.;
 
+    //config.color_transparent = Color::rgba_u8(0, 128, 0, 64); // DEBUG
     config.color_transparent = Color::rgba_u8(0, 0, 0, 0);
     config.color_white = Color::WHITE;
     config.color_grey = Color::rgb_u8(100, 100, 100);
@@ -49,9 +49,6 @@ fn setup_system(
 // TODO put in release mode (WASM)
 
 fn main() {
-    #[cfg(target_arch = "wasm32")]
-    console_error_panic_hook::set_once();
-
     App::new()
         .insert_resource(bevy::log::LogSettings {
             level: bevy::log::Level::ERROR,
