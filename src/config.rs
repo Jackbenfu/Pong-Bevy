@@ -1,4 +1,5 @@
 use crate::{Color, Font, Handle};
+use bevy_kira_audio::{AudioSource};
 
 #[derive(Default)]
 pub struct Config {
@@ -19,4 +20,8 @@ pub struct Config {
     pub color_red: Color,
 
     pub font: Handle<Font>,
+
+    pub audio_paddle_left: Handle<AudioSource>,
+    pub audio_paddle_right: Handle<AudioSource>,
+    pub audio_wall: Handle<AudioSource>,
 }

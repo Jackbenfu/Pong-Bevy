@@ -4,9 +4,11 @@ use bevy::{
     input::ElementState,
     sprite::collide_aabb::*,
 };
+use bevy_kira_audio::{Audio};
 
 use crate::config::*;
 use crate::components::*;
+use crate::events::*;
 use crate::state::*;
 
 pub fn move_left_paddle_with_keyboard_system(
@@ -49,10 +51,11 @@ pub fn move_ball_system(
 pub fn check_ball_collision_system(
     mut ball_query: Query<(&mut Ball, &mut Transform)>,
     mut ball_hit_paddle_event: EventWriter<BallHitPaddleEvent>,
-    collider_query: Query<(&Collider, &Transform), Without<Ball>>,
+    collider_query: Query<(&Collider, &Transform, &SoundEmitter), Without<Ball>>,
     config: Res<Config>,
+    audio: Res<Audio>,
 ) {
-    for (collider, collider_transform) in collider_query.iter() {
+    for (collider, collider_transform, collider_sound) in collider_query.iter() {
         let (mut ball, mut ball_transform) = ball_query.single_mut();
 
         let bx = ball_transform.translation.x;
@@ -156,6 +159,8 @@ pub fn check_ball_collision_system(
                     ball.velocity.y = -v_y1;
                 }
             }
+
+            audio.play(collider_sound.source.clone());
         }
     }
 }

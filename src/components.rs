@@ -1,12 +1,7 @@
 use bevy::prelude::*;
+use bevy_kira_audio::{AudioSource};
 
 use crate::Vec3;
-
-pub struct GameOverEvent(pub Side);
-
-pub struct BallOutEvent(pub Side);
-
-pub struct BallHitPaddleEvent();
 
 #[derive(Default)]
 pub struct GameData {
@@ -67,3 +62,8 @@ pub struct RightScore {}
 
 #[derive(Component)]
 pub struct Instruction {}
+
+#[derive(Component)]
+pub struct SoundEmitter {
+    pub source: Handle<AudioSource>,
+}

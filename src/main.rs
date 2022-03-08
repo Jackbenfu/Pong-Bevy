@@ -2,6 +2,7 @@ mod config;
 mod systems_generic;
 mod systems_1v1;
 mod components;
+mod events;
 mod state;
 mod helpers_sprite;
 mod menu;
@@ -10,6 +11,7 @@ mod mode_2p;
 mod mode_wall;
 
 use bevy::prelude::*;
+use bevy_kira_audio::{AudioPlugin};
 use config::*;
 use state::*;
 use menu::*;
@@ -30,7 +32,7 @@ fn setup_system(
     config.game_ball_speed_max = 750.;
     config.game_ball_speed_incr = 5.;
     config.game_ball_oob_x = 200.;
-    config.game_1v1_score_to_win = 2;
+    config.game_1v1_score_to_win = 9;
 
     config.sprite_unit_size = 16.;
 
@@ -43,10 +45,11 @@ fn setup_system(
     config.color_red = Color::rgb_u8(196, 89, 73);
 
     config.font = asset_server.load("fonts/Volter__28Goldfish_29.ttf");
-}
 
-// TODO sounds
-// TODO put in release mode (WASM)
+    config.audio_paddle_left = asset_server.load("sounds/left.wav");
+    config.audio_paddle_right = asset_server.load("sounds/right.wav");
+    config.audio_wall = asset_server.load("sounds/wall.wav");
+}
 
 fn main() {
     App::new()
@@ -66,6 +69,7 @@ fn main() {
         .init_resource::<Config>()
         .add_startup_system(setup_system)
         .add_plugins(DefaultPlugins)
+        .add_plugin(AudioPlugin)
         .add_plugin(MenuPlugin)
         .add_plugin(Mode1PPlugin)
         .add_plugin(Mode2PPlugin)

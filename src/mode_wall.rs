@@ -4,6 +4,7 @@ use rand::*;
 use crate::config::*;
 use crate::systems_generic::*;
 use crate::components::*;
+use crate::events::*;
 use crate::state::*;
 use crate::helpers_sprite::*;
 
@@ -57,7 +58,7 @@ impl Plugin for ModeWallPlugin {
     }
 }
 
-pub fn reset_game_data_system(
+fn reset_game_data_system(
     mut game_data: ResMut<GameData>,
 ) {
     game_data.left_score = 0;
@@ -75,16 +76,19 @@ fn setup_court_system(
     commands
         .spawn_bundle(create_top_wall_sprite(window.width, window.height, unit_size, color))
         .insert(GameModeEntity {})
+        .insert(SoundEmitter { source: config.audio_wall.clone() })
         .insert(Collider::Wall);
 
     commands
         .spawn_bundle(create_bottom_wall_sprite(window.width, window.height, unit_size, color))
         .insert(GameModeEntity {})
+        .insert(SoundEmitter { source: config.audio_wall.clone() })
         .insert(Collider::Wall);
 
     commands
         .spawn_bundle(create_right_wall_sprite(window.width, window.height, unit_size, color))
         .insert(GameModeEntity {})
+        .insert(SoundEmitter { source: config.audio_wall.clone() })
         .insert(Collider::Wall);
 }
 
@@ -353,6 +357,7 @@ fn setup_left_paddle_system(
         .spawn_bundle(create_left_paddle_sprite(window.width, config.sprite_unit_size, config.color_white))
         .insert(GameModeEntity {})
         .insert(LeftPaddle { speed: config.game_paddle_speed })
+        .insert(SoundEmitter { source: config.audio_paddle_left.clone() })
         .insert(Collider::Paddle)
         .insert(Service {});
 }

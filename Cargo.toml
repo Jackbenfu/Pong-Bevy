@@ -5,7 +5,18 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[profile.release]
+opt-level = 3
+lto = "thin"
+
 [dependencies]
 bevy = "0.6"
 rand = "0.8.4"
 console_error_panic_hook = "0.1"
+
+[dependencies.bevy_kira_audio]
+version = "0.8.0"
+default-features = false
+features = [
+    "wav",
+]

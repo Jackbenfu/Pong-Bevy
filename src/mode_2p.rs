@@ -4,6 +4,7 @@ use crate::config::*;
 use crate::systems_generic::*;
 use crate::systems_1v1::*;
 use crate::components::*;
+use crate::events::*;
 use crate::state::*;
 
 pub struct Mode2PPlugin;
