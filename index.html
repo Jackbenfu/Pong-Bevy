@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pong</title>
+    <link rel="preload" href="pixel.ttf" as="font"/>
+    <style>
+        @font-face {
+            font-family: 'pixel';
+            src: url('pixel.ttf');
+        }
+
+        body {
+            background: #000;
+            margin: 0 auto;
+            padding: 0;
+            width: 768px;
+        }
+
+        canvas {
+            outline: none;
+        }
+
+        #warning-focus {
+            background: #C45949;
+            bottom: 0;
+            color: #FFF;
+            cursor: pointer;
+            font-family: pixel, sans-serif;
+            font-size: 30px;
+            height: 60px;
+            left: 0;
+            line-height: 30px;
+            margin: auto;
+            padding: 10px;
+            position: absolute;
+            right: 0;
+            text-align: center;
+            top: 0;
+            width: 550px;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body onfocus="onFocus()" onblur="onBlur()">
+<div id="warning-focus" style="display: none">
+    Game has lost focus!<br/>
+    Click on me to restore focus...
+</div>
+<script>
+    // Insert hack to make sound autoplay on Chrome as soon as the user interacts with the tab:
+    // https://developers.google.com/web/updates/2018/11/web-audio-autoplay#moving-forward
+
+    // the following function keeps track of all AudioContexts and resumes them on the first user
+    // interaction with the page. If the function is called and all contexts are already running,
+    // it will remove itself from all event listeners.
+    (function () {
+        // An array of all contexts to resume on the page
+        const audioContextList = [];
+
+        // An array of various user interaction events we should listen for
+        const userInputEventNames = [
+            "click",
+            "contextmenu",
+            "auxclick",
+            "dblclick",
+            "mousedown",
+            "mouseup",
+            "pointerup",
+            "touchend",
+            "keydown",
+            "keyup",
+        ];
+
+        // A proxy object to intercept AudioContexts and
+        // add them to the array for tracking and resuming later
+        self.AudioContext = new Proxy(self.AudioContext, {
+            construct(target, args) {
+                const result = new target(...args);
+                audioContextList.push(result);
+                return result;
+            },
+        });
+
+        // To resume all AudioContexts being tracked
+        function resumeAllContexts(_event) {
+            let count = 0;
+
+            audioContextList.forEach((context) => {
+                if (context.state !== "running") {
+                    context.resume();
+                } else {
+                    count++;
+                }
+            });
+
+            // If all the AudioContexts have now resumed then we unbind all
+            // the event listeners from the page to prevent unnecessary resume attempts
+            // Checking count > 0 ensures that the user interaction happens AFTER the game started up
+            if (count > 0 && count === audioContextList.length) {
+                userInputEventNames.forEach((eventName) => {
+                    document.removeEventListener(eventName, resumeAllContexts);
+                });
+            }
+        }
+
+        // We bind the resume function for each user interaction
+        // event on the page
+        userInputEventNames.forEach((eventName) => {
+            document.addEventListener(eventName, resumeAllContexts);
+        });
+    })();
+</script>
+<script type="text/javascript">
+    window.focus();
+
+    function onFocus() {
+        document.getElementById('warning-focus').style.display = 'none';
+        document.getElementsByTagName('canvas')[0].style.opacity = 1.0.toString();
+    }
+
+    function onBlur() {
+        document.getElementById('warning-focus').style.display = 'block';
+        document.getElementsByTagName('canvas')[0].style.opacity = .2.toString();
+    }
+</script>
+<script type="module">
+    import init from './pong_bevy.js'
+
+    init()
+</script>
+</body>
+</html>
