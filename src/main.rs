@@ -32,7 +32,7 @@ fn setup_system(
     config.game_ball_speed_max = 750.;
     config.game_ball_speed_incr = 5.;
     config.game_ball_oob_x = 200.;
-    config.game_1v1_score_to_win = 9;
+    config.game_1v1_score_to_win = 2;
 
     config.sprite_unit_size = 16.;
 
