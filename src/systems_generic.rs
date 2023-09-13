@@ -1,7 +1,7 @@
 use bevy::{
     prelude::*,
     input::keyboard::*,
-    input::ElementState,
+    input::ButtonState,
     sprite::collide_aabb::*,
 };
 use bevy_kira_audio::{Audio};
@@ -14,10 +14,11 @@ use crate::state::*;
 pub fn move_left_paddle_with_keyboard_system(
     mut paddle_query: Query<(&LeftPaddle, &mut Transform)>,
     keyboard: Res<Input<KeyCode>>,
-    window: Res<WindowDescriptor>,
+    windows: Res<Windows>,
     time: Res<Time>,
     config: Res<Config>,
 ) {
+    let window = windows.get_primary().unwrap();
     let mut direction = 0.;
 
     if keyboard.pressed(KeyCode::S) {
@@ -29,7 +30,7 @@ pub fn move_left_paddle_with_keyboard_system(
     }
 
     let (paddle_entity, mut paddle_transform) = paddle_query.single_mut();
-    let bound_y = window.height / 2. - config.sprite_unit_size - paddle_transform.scale.y / 2.;
+    let bound_y = window.height() / 2. - config.sprite_unit_size - paddle_transform.scale.y / 2.;
 
     let translation = &mut paddle_transform.translation;
     translation.y += direction * paddle_entity.speed * time.delta_seconds();
@@ -51,11 +52,11 @@ pub fn move_ball_system(
 pub fn check_ball_collision_system(
     mut ball_query: Query<(&mut Ball, &mut Transform)>,
     mut ball_hit_paddle_event: EventWriter<BallHitPaddleEvent>,
-    collider_query: Query<(&Collider, &Transform, &SoundEmitter), Without<Ball>>,
-    config: Res<Config>,
-    audio: Res<Audio>,
+    collider_query: Query<(&Collider, &Transform/*, &SoundEmitter*/), Without<Ball>>,
+    config: Res<Config>/*,
+    audio: Res<Audio>,*/
 ) {
-    for (collider, collider_transform, collider_sound) in collider_query.iter() {
+    for (collider, collider_transform/*, collider_sound*/) in collider_query.iter() {
         let (mut ball, mut ball_transform) = ball_query.single_mut();
 
         let bx = ball_transform.translation.x;
@@ -160,7 +161,7 @@ pub fn check_ball_collision_system(
                 }
             }
 
-            audio.play(collider_sound.source.clone());
+            //audio.play(collider_sound.source.clone());
         }
     }
 }
@@ -168,7 +169,7 @@ pub fn check_ball_collision_system(
 pub fn check_ball_out_system(
     mut ball_out_event: EventWriter<BallOutEvent>,
     mut ball_query: Query<&Transform, With<Ball>>,
-    window: Res<WindowDescriptor>,
+    windows: Res<Windows>,
     config: Res<Config>,
     game_data: Res<GameData>,
 ) {
@@ -176,11 +177,12 @@ pub fn check_ball_out_system(
         return;
     }
 
+    let window = windows.get_primary().unwrap();
     let ball_transform = ball_query.single_mut();
 
-    if ball_transform.translation.x < -window.width / 2. - config.game_ball_oob_x {
+    if ball_transform.translation.x < -window.width() / 2. - config.game_ball_oob_x {
         ball_out_event.send(BallOutEvent(Side::Left));
-    } else if ball_transform.translation.x > window.width / 2. + config.game_ball_oob_x {
+    } else if ball_transform.translation.x > window.width() / 2. + config.game_ball_oob_x {
         ball_out_event.send(BallOutEvent(Side::Right));
     }
 }
@@ -200,7 +202,7 @@ pub fn back_to_menu_system(
 ) {
     for event in keyboard_input_events.iter() {
         if let Some(key_code) = event.key_code {
-            if event.state == ElementState::Released && key_code == KeyCode::Escape {
+            if event.state == ButtonState::Released && key_code == KeyCode::Escape {
                 state.set(GameState::Menu).unwrap();
             }
         }

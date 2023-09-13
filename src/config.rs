@@ -1,7 +1,8 @@
+use bevy::prelude::Resource;
 use crate::{Color, Font, Handle};
 use bevy_kira_audio::{AudioSource};
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub struct Config {
     pub game_paddle_speed: f32,
     pub game_ball_speed_min: f32,
@@ -21,7 +22,7 @@ pub struct Config {
 
     pub font: Handle<Font>,
 
-    pub audio_paddle_left: Handle<AudioSource>,
-    pub audio_paddle_right: Handle<AudioSource>,
-    pub audio_wall: Handle<AudioSource>,
+//    pub audio_paddle_left: Handle<AudioSource>,
+//    pub audio_paddle_right: Handle<AudioSource>,
+//    pub audio_wall: Handle<AudioSource>,
 }

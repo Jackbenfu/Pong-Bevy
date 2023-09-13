@@ -67,43 +67,46 @@ fn reset_game_data_system(
 
 fn setup_court_system(
     mut commands: Commands,
-    window: Res<WindowDescriptor>,
+    windows: Res<Windows>,
     config: Res<Config>,
 ) {
+    let window = windows.get_primary().unwrap();
     let color = config.color_white;
     let unit_size = config.sprite_unit_size;
 
     commands
-        .spawn_bundle(create_top_wall_sprite(window.width, window.height, unit_size, color))
+        .spawn(create_top_wall_sprite(window.width(), window.height(), unit_size, color))
         .insert(GameModeEntity {})
-        .insert(SoundEmitter { source: config.audio_wall.clone() })
+        //.insert(SoundEmitter { source: config.audio_wall.clone() })
         .insert(Collider::Wall);
 
     commands
-        .spawn_bundle(create_bottom_wall_sprite(window.width, window.height, unit_size, color))
+        .spawn(create_bottom_wall_sprite(window.width(), window.height(), unit_size, color))
         .insert(GameModeEntity {})
-        .insert(SoundEmitter { source: config.audio_wall.clone() })
+        //.insert(SoundEmitter { source: config.audio_wall.clone() })
         .insert(Collider::Wall);
 
     commands
-        .spawn_bundle(create_right_wall_sprite(window.width, window.height, unit_size, color))
+        .spawn(create_right_wall_sprite(window.width(), window.height(), unit_size, color))
         .insert(GameModeEntity {})
-        .insert(SoundEmitter { source: config.audio_wall.clone() })
+        //.insert(SoundEmitter { source: config.audio_wall.clone() })
         .insert(Collider::Wall);
 }
 
 fn setup_score_system(
     mut commands: Commands,
-    window: Res<WindowDescriptor>,
+    windows: Res<Windows>,
     config: Res<Config>,
 ) {
+    let window = windows.get_primary().unwrap();
+
     // Score
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(416.), Val::Px(64.)),
-                position: Rect {
-                    right: Val::Px((window.width - 416.) / 2.),
+                position: UiRect {
+                    right: Val::Px((window.width() - 416.) / 2.),
                     top: Val::Px(48.),
                     ..Default::default()
                 },
@@ -112,19 +115,18 @@ fn setup_score_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     format!("{}", 0),
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 57.,
                         color: config.color_white,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             })
@@ -139,10 +141,10 @@ fn setup_instructions_system(
 ) {
     // Goal label
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(324.), Val::Px(48.)),
-                position: Rect {
+                position: UiRect {
                     top: Val::Px(128.),
                     left: Val::Px(0.),
                     ..Default::default()
@@ -152,19 +154,18 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "Goal",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 30.,
                         color: config.color_yellow,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });
@@ -174,10 +175,10 @@ fn setup_instructions_system(
 
     // Goal text
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(352.), Val::Px(48.)),
-                position: Rect {
+                position: UiRect {
                     top: Val::Px(128.),
                     left: Val::Px(356.),
                     ..Default::default()
@@ -187,19 +188,18 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "score a max!",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 30.,
                         color: config.color_grey,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });
@@ -209,10 +209,10 @@ fn setup_instructions_system(
 
     // Left paddle control label
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(324.), Val::Px(48.)),
-                position: Rect {
+                position: UiRect {
                     top: Val::Px(176.),
                     left: Val::Px(0.),
                     ..Default::default()
@@ -222,19 +222,18 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "S or X",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 30.,
                         color: config.color_yellow,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });
@@ -244,10 +243,10 @@ fn setup_instructions_system(
 
     // Left paddle control text
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(352.), Val::Px(48.)),
-                position: Rect {
+                position: UiRect {
                     top: Val::Px(176.),
                     left: Val::Px(356.),
                     ..Default::default()
@@ -257,19 +256,18 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "move the paddle",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 30.,
                         color: config.color_grey,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });
@@ -279,10 +277,10 @@ fn setup_instructions_system(
 
     // Launch label
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(324.), Val::Px(48.)),
-                position: Rect {
+                position: UiRect {
                     top: Val::Px(226.),
                     left: Val::Px(0.),
                     ..Default::default()
@@ -292,19 +290,18 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "SPACEBAR",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 30.,
                         color: config.color_yellow,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });
@@ -314,10 +311,10 @@ fn setup_instructions_system(
 
     // Launch text
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(352.), Val::Px(48.)),
-                position: Rect {
+                position: UiRect {
                     top: Val::Px(226.),
                     left: Val::Px(356.),
                     ..Default::default()
@@ -327,19 +324,18 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "launch the ball",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 30.,
                         color: config.color_grey,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });
@@ -350,14 +346,16 @@ fn setup_instructions_system(
 
 fn setup_left_paddle_system(
     mut commands: Commands,
-    window: Res<WindowDescriptor>,
+    windows: Res<Windows>,
     config: Res<Config>,
 ) {
+    let window = windows.get_primary().unwrap();
+
     commands
-        .spawn_bundle(create_left_paddle_sprite(window.width, config.sprite_unit_size, config.color_white))
+        .spawn(create_left_paddle_sprite(window.width(), config.sprite_unit_size, config.color_white))
         .insert(GameModeEntity {})
         .insert(LeftPaddle { speed: config.game_paddle_speed })
-        .insert(SoundEmitter { source: config.audio_paddle_left.clone() })
+        //.insert(SoundEmitter { source: config.audio_paddle_left.clone() })
         .insert(Collider::Paddle)
         .insert(Service {});
 }
@@ -367,7 +365,7 @@ fn setup_ball_system(
     config: Res<Config>,
 ) {
     commands
-        .spawn_bundle(create_ball_sprite(config.sprite_unit_size, Vec3::new(-128., -80., 0.), config.color_yellow))
+        .spawn(create_ball_sprite(config.sprite_unit_size, Vec3::new(-128., -80., 0.), config.color_yellow))
         .insert(GameModeEntity {})
         .insert(Ball { speed: config.game_ball_speed_min, velocity: Vec3::default() });
 }
@@ -449,16 +447,18 @@ fn check_game_over_system(
 fn game_over_system(
     mut commands: Commands,
     mut game_over_event: EventReader<GameOverEvent>,
-    window: Res<WindowDescriptor>,
+    windows: Res<Windows>,
     config: Res<Config>,
 ) {
+    let window = windows.get_primary().unwrap();
+
     for _ in game_over_event.iter() {
         commands
-            .spawn_bundle(ButtonBundle {
+            .spawn(ButtonBundle {
                 style: Style {
                     size: Size::new(Val::Px(544.), Val::Px(128.)),
-                    position: Rect {
-                        right: Val::Px((window.width - 544.) / 2.),
+                    position: UiRect {
+                        right: Val::Px((window.width() - 544.) / 2.),
                         top: Val::Px(128.),
                         ..Default::default()
                     },
@@ -467,19 +467,18 @@ fn game_over_system(
                     align_items: AlignItems::Center,
                     ..Default::default()
                 },
-                color: config.color_transparent.into(),
+                background_color: config.color_transparent.into(),
                 ..Default::default()
             })
             .with_children(|parent| {
-                parent.spawn_bundle(TextBundle {
-                    text: Text::with_section(
+                parent.spawn(TextBundle {
+                    text: Text::from_section(
                         "GAME OVER",
                         TextStyle {
                             font: config.font.clone(),
                             font_size: 90.,
                             color: config.color_white,
                         },
-                        Default::default(),
                     ),
                     ..Default::default()
                 });

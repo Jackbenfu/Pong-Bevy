@@ -66,10 +66,10 @@ fn setup_instructions_system(
 ) {
     // Goal label
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(352.), Val::Px(48.)),
-                position: Rect {
+                position: UiRect {
                     bottom: Val::Px(192.),
                     left: Val::Px(0.),
                     ..Default::default()
@@ -79,19 +79,18 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "Goal",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 30.,
                         color: config.color_yellow,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });
@@ -101,10 +100,10 @@ fn setup_instructions_system(
 
     // Goal text
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(352.), Val::Px(48.)),
-                position: Rect {
+                position: UiRect {
                     bottom: Val::Px(192.),
                     left: Val::Px(416.),
                     ..Default::default()
@@ -114,19 +113,18 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "beat your friend!",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 30.,
                         color: config.color_grey,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });
@@ -136,10 +134,10 @@ fn setup_instructions_system(
 
     // Left paddle control label
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(352.), Val::Px(48.)),
-                position: Rect {
+                position: UiRect {
                     bottom: Val::Px(144.),
                     left: Val::Px(0.),
                     ..Default::default()
@@ -149,19 +147,18 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "S or X",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 30.,
                         color: config.color_yellow,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });
@@ -171,10 +168,10 @@ fn setup_instructions_system(
 
     // Left paddle control text
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(352.), Val::Px(48.)),
-                position: Rect {
+                position: UiRect {
                     bottom: Val::Px(144.),
                     left: Val::Px(416.),
                     ..Default::default()
@@ -184,19 +181,18 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "move left paddle",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 30.,
                         color: config.color_grey,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });
@@ -206,10 +202,10 @@ fn setup_instructions_system(
 
     // Right paddle control label
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(352.), Val::Px(48.)),
-                position: Rect {
+                position: UiRect {
                     bottom: Val::Px(96.),
                     left: Val::Px(0.),
                     ..Default::default()
@@ -219,19 +215,18 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "P or L",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 30.,
                         color: config.color_yellow,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });
@@ -241,10 +236,10 @@ fn setup_instructions_system(
 
     // Right paddle control text
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(352.), Val::Px(48.)),
-                position: Rect {
+                position: UiRect {
                     bottom: Val::Px(96.),
                     left: Val::Px(416.),
                     ..Default::default()
@@ -254,19 +249,18 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "move right paddle",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 30.,
                         color: config.color_grey,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });
@@ -276,10 +270,10 @@ fn setup_instructions_system(
 
     // Launch label
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(352.), Val::Px(48.)),
-                position: Rect {
+                position: UiRect {
                     bottom: Val::Px(48.),
                     left: Val::Px(0.),
                     ..Default::default()
@@ -289,19 +283,18 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "SPACEBAR",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 30.,
                         color: config.color_yellow,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });
@@ -311,10 +304,10 @@ fn setup_instructions_system(
 
     // Launch text
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(352.), Val::Px(48.)),
-                position: Rect {
+                position: UiRect {
                     bottom: Val::Px(48.),
                     left: Val::Px(416.),
                     ..Default::default()
@@ -324,19 +317,18 @@ fn setup_instructions_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "launch the ball",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 30.,
                         color: config.color_grey,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });
@@ -348,7 +340,7 @@ fn setup_instructions_system(
 fn move_right_paddle_with_keyboard_system(
     mut paddle_query: Query<(&RightPaddle, &mut Transform)>,
     keyboard: Res<Input<KeyCode>>,
-    window: Res<WindowDescriptor>,
+    windows: Res<Windows>,
     time: Res<Time>,
     config: Res<Config>,
 ) {
@@ -362,8 +354,9 @@ fn move_right_paddle_with_keyboard_system(
         direction -= 1.;
     }
 
+    let window = windows.get_primary().unwrap();
     let (paddle_entity, mut paddle_transform) = paddle_query.single_mut();
-    let bound_y = window.height / 2. - config.sprite_unit_size - paddle_transform.scale.y / 2.;
+    let bound_y = window.height() / 2. - config.sprite_unit_size - paddle_transform.scale.y / 2.;
 
     let translation = &mut paddle_transform.translation;
     translation.y += direction * paddle_entity.speed * time.delta_seconds();

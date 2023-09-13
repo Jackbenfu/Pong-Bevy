@@ -62,42 +62,43 @@ impl Plugin for MenuPlugin {
 
 fn setup_background_system(
     mut commands: Commands,
-    window: Res<WindowDescriptor>,
+    windows: Res<Windows>,
     config: Res<Config>,
 ) {
+    let window = windows.get_primary().unwrap();
     let color = config.color_grey;
     let unit_size = config.sprite_unit_size;
 
     commands
-        .spawn_bundle(create_top_wall_sprite(window.width, window.height, unit_size, color))
+        .spawn(create_top_wall_sprite(window.width(), window.height(), unit_size, color))
         .insert(MenuEntity {});
 
     commands
-        .spawn_bundle(create_bottom_wall_sprite(window.width, window.height, unit_size, color))
+        .spawn(create_bottom_wall_sprite(window.width(), window.height(), unit_size, color))
         .insert(MenuEntity {});
 
     commands
-        .spawn_bundle(create_left_paddle_sprite(window.width, unit_size, color))
+        .spawn(create_left_paddle_sprite(window.width(), unit_size, color))
         .insert(MenuEntity {});
 
     commands
-        .spawn_bundle(create_right_paddle_sprite(window.width, unit_size, color))
+        .spawn(create_right_paddle_sprite(window.width(), unit_size, color))
         .insert(MenuEntity {});
 
     // Net
     {
         commands
-            .spawn_bundle(create_net_sprite(0., unit_size, color))
+            .spawn(create_net_sprite(0., unit_size, color))
             .insert(MenuEntity {});
 
         let mut y: f32 = unit_size * 3.;
-        while y < window.height / 2. {
+        while y < window.height() / 2. {
             commands
-                .spawn_bundle(create_net_sprite(y, unit_size, color))
+                .spawn(create_net_sprite(y, unit_size, color))
                 .insert(MenuEntity {});
 
             commands
-                .spawn_bundle(create_net_sprite(-y, unit_size, color))
+                .spawn(create_net_sprite(-y, unit_size, color))
                 .insert(MenuEntity {});
 
             y += unit_size * 3.;
@@ -107,15 +108,17 @@ fn setup_background_system(
 
 fn setup_title_system(
     mut commands: Commands,
-    window: Res<WindowDescriptor>,
+    windows: Res<Windows>,
     config: Res<Config>,
 ) {
+    let window = windows.get_primary().unwrap();
+
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(416.), Val::Px(128.)),
-                position: Rect {
-                    right: Val::Px((window.width - 416.) / 2.),
+                position: UiRect {
+                    right: Val::Px((window.width() - 416.) / 2.),
                     top: Val::Px(128.),
                     ..Default::default()
                 },
@@ -124,19 +127,18 @@ fn setup_title_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "PONG",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 144.,
                         color: config.color_white,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });
@@ -149,25 +151,24 @@ fn setup_copyright_system(
     config: Res<Config>,
 ) {
     commands
-        .spawn_bundle(TextBundle {
+        .spawn(TextBundle {
             style: Style {
                 align_self: AlignSelf::FlexEnd,
                 position_type: PositionType::Absolute,
-                position: Rect {
+                position: UiRect {
                     bottom: Val::Px(config.sprite_unit_size * 2.),
                     right: Val::Px(config.sprite_unit_size),
                     ..Default::default()
                 },
                 ..Default::default()
             },
-            text: Text::with_section(
+            text: Text::from_section(
                 "© 2022 Jackbenfu",
                 TextStyle {
                     font: config.font.clone(),
                     font_size: 18.,
                     color: config.color_grey,
                 },
-                Default::default(),
             ),
             ..Default::default()
         })
@@ -176,16 +177,18 @@ fn setup_copyright_system(
 
 fn setup_buttons_system(
     mut commands: Commands,
-    window: Res<WindowDescriptor>,
+    windows: Res<Windows>,
     config: Res<Config>,
 ) {
+    let window = windows.get_primary().unwrap();
+
     // 1 player button
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(256.), Val::Px(48.)),
-                position: Rect {
-                    right: Val::Px((window.width - 256.) / 2.),
+                position: UiRect {
+                    right: Val::Px((window.width() - 256.) / 2.),
                     top: Val::Px(272.),
                     ..Default::default()
                 },
@@ -194,19 +197,18 @@ fn setup_buttons_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "1 player",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 36.,
                         color: config.color_white,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });
@@ -217,11 +219,11 @@ fn setup_buttons_system(
 
     // 2 players button
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(256.), Val::Px(48.)),
-                position: Rect {
-                    right: Val::Px((window.width - 256.) / 2.),
+                position: UiRect {
+                    right: Val::Px((window.width() - 256.) / 2.),
                     top: Val::Px(336.),
                     ..Default::default()
                 },
@@ -230,19 +232,18 @@ fn setup_buttons_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "2 players",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 36.,
                         color: config.color_white,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });
@@ -253,11 +254,11 @@ fn setup_buttons_system(
 
     // Wall mode button
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(256.), Val::Px(48.)),
-                position: Rect {
-                    right: Val::Px((window.width - 256.) / 2.),
+                position: UiRect {
+                    right: Val::Px((window.width() - 256.) / 2.),
                     top: Val::Px(400.),
                     ..Default::default()
                 },
@@ -266,19 +267,18 @@ fn setup_buttons_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "Wall mode",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 36.,
                         color: config.color_white,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });
@@ -290,11 +290,11 @@ fn setup_buttons_system(
     // Quit button
     #[cfg(not(target_arch = "wasm32"))]
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(256.), Val::Px(48.)),
-                position: Rect {
-                    right: Val::Px((window.width - 256.) / 2.),
+                position: UiRect {
+                    right: Val::Px((window.width() - 256.) / 2.),
                     top: Val::Px(464.),
                     ..Default::default()
                 },
@@ -303,19 +303,18 @@ fn setup_buttons_system(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: config.color_transparent.into(),
+            background_color: config.color_transparent.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
+            parent.spawn(TextBundle {
+                text: Text::from_section(
                     "Quit",
                     TextStyle {
                         font: config.font.clone(),
                         font_size: 36.,
                         color: config.color_white,
                     },
-                    Default::default(),
                 ),
                 ..Default::default()
             });

@@ -17,38 +17,39 @@ pub fn reset_game_data_system(
 
 pub fn setup_court_system(
     mut commands: Commands,
-    window: Res<WindowDescriptor>,
+    windows: Res<Windows>,
     config: Res<Config>,
 ) {
+    let window = windows.get_primary().unwrap();
     let color = config.color_white;
     let unit_size = config.sprite_unit_size;
 
     commands
-        .spawn_bundle(create_top_wall_sprite(window.width, window.height, unit_size, color))
+        .spawn(create_top_wall_sprite(window.width(), window.height(), unit_size, color))
         .insert(GameModeEntity {})
-        .insert(SoundEmitter { source: config.audio_wall.clone() })
+        //.insert(SoundEmitter { source: config.audio_wall.clone() })
         .insert(Collider::Wall);
 
     commands
-        .spawn_bundle(create_bottom_wall_sprite(window.width, window.height, unit_size, color))
+        .spawn(create_bottom_wall_sprite(window.width(), window.height(), unit_size, color))
         .insert(GameModeEntity {})
-        .insert(SoundEmitter { source: config.audio_wall.clone() })
+        //.insert(SoundEmitter { source: config.audio_wall.clone() })
         .insert(Collider::Wall);
 
     // Net
     {
         commands
-            .spawn_bundle(create_net_sprite(0., unit_size, color))
+            .spawn(create_net_sprite(0., unit_size, color))
             .insert(GameModeEntity {});
 
         let mut y: f32 = unit_size * 3.;
-        while y < window.height / 2. {
+        while y < window.height() / 2. {
             commands
-                .spawn_bundle(create_net_sprite(y, unit_size, color))
+                .spawn(create_net_sprite(y, unit_size, color))
                 .insert(GameModeEntity {});
 
             commands
-                .spawn_bundle(create_net_sprite(-y, unit_size, color))
+                .spawn(create_net_sprite(-y, unit_size, color))
                 .insert(GameModeEntity {});
 
             y += unit_size * 3.;
@@ -62,24 +63,23 @@ pub fn setup_scores_system(
 ) {
     // Left score
     commands
-        .spawn_bundle(TextBundle {
+        .spawn(TextBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: Rect {
+                position: UiRect {
                     left: Val::Px(310.),
                     top: Val::Px(48.),
                     ..Default::default()
                 },
                 ..Default::default()
             },
-            text: Text::with_section(
+            text: Text::from_section(
                 format!("{}", 0),
                 TextStyle {
                     font: config.font.clone(),
                     font_size: 57.,
                     color: config.color_white,
                 },
-                Default::default(),
             ),
             ..Default::default()
         })
@@ -88,24 +88,23 @@ pub fn setup_scores_system(
 
     // Left score max
     commands
-        .spawn_bundle(TextBundle {
+        .spawn(TextBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: Rect {
+                position: UiRect {
                     left: Val::Px(330.),
                     top: Val::Px(88.),
                     ..Default::default()
                 },
                 ..Default::default()
             },
-            text: Text::with_section(
+            text: Text::from_section(
                 format!("/{}", config.game_1v1_score_to_win),
                 TextStyle {
                     font: config.font.clone(),
                     font_size: 21.,
                     color: config.color_grey,
                 },
-                Default::default(),
             ),
             ..Default::default()
         })
@@ -113,24 +112,23 @@ pub fn setup_scores_system(
 
     // Right score
     commands
-        .spawn_bundle(TextBundle {
+        .spawn(TextBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: Rect {
+                position: UiRect {
                     left: Val::Px(426.),
                     top: Val::Px(48.),
                     ..Default::default()
                 },
                 ..Default::default()
             },
-            text: Text::with_section(
+            text: Text::from_section(
                 format!("{}", 0),
                 TextStyle {
                     font: config.font.clone(),
                     font_size: 57.,
                     color: config.color_white,
                 },
-                Default::default(),
             ),
             ..Default::default()
         })
@@ -139,24 +137,23 @@ pub fn setup_scores_system(
 
     // Right score max
     commands
-        .spawn_bundle(TextBundle {
+        .spawn(TextBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: Rect {
+                position: UiRect {
                     left: Val::Px(450.),
                     top: Val::Px(88.),
                     ..Default::default()
                 },
                 ..Default::default()
             },
-            text: Text::with_section(
+            text: Text::from_section(
                 format!("/{}", config.game_1v1_score_to_win),
                 TextStyle {
                     font: config.font.clone(),
                     font_size: 21.,
                     color: config.color_grey,
                 },
-                Default::default(),
             ),
             ..Default::default()
         })
@@ -165,15 +162,17 @@ pub fn setup_scores_system(
 
 pub fn setup_left_paddle_system(
     mut commands: Commands,
-    window: Res<WindowDescriptor>,
+    windows: Res<Windows>,
     config: Res<Config>,
     game_data: Res<GameData>,
 ) {
+    let window = windows.get_primary().unwrap();
+
     let entity = commands
-        .spawn_bundle(create_left_paddle_sprite(window.width, config.sprite_unit_size, config.color_white))
+        .spawn(create_left_paddle_sprite(window.width(), config.sprite_unit_size, config.color_white))
         .insert(GameModeEntity {})
         .insert(LeftPaddle { speed: config.game_paddle_speed })
-        .insert(SoundEmitter { source: config.audio_paddle_left.clone() })
+        //.insert(SoundEmitter { source: config.audio_paddle_left.clone() })
         .insert(Collider::Paddle)
         .id();
 
@@ -184,15 +183,17 @@ pub fn setup_left_paddle_system(
 
 pub fn setup_right_paddle_system(
     mut commands: Commands,
-    window: Res<WindowDescriptor>,
+    windows: Res<Windows>,
     config: Res<Config>,
     game_data: Res<GameData>,
 ) {
+    let window = windows.get_primary().unwrap();
+
     let entity = commands
-        .spawn_bundle(create_right_paddle_sprite(window.width, config.sprite_unit_size, config.color_white))
+        .spawn(create_right_paddle_sprite(window.width(), config.sprite_unit_size, config.color_white))
         .insert(GameModeEntity {})
         .insert(RightPaddle { velocity: Vec3::default(), speed: config.game_paddle_speed })
-        .insert(SoundEmitter { source: config.audio_paddle_right.clone() })
+        //.insert(SoundEmitter { source: config.audio_paddle_right.clone() })
         .insert(Collider::Paddle)
         .id();
 
@@ -206,7 +207,7 @@ pub fn setup_ball_system(
     config: Res<Config>,
 ) {
     commands
-        .spawn_bundle(create_ball_sprite(config.sprite_unit_size, Vec3::default(), config.color_yellow))
+        .spawn(create_ball_sprite(config.sprite_unit_size, Vec3::default(), config.color_yellow))
         .insert(GameModeEntity {})
         .insert(Ball { speed: config.game_ball_speed_min, velocity: Vec3::default() });
 }
@@ -387,10 +388,10 @@ pub fn game_over_system(
 
         // Left
         commands
-            .spawn_bundle(ButtonBundle {
+            .spawn(ButtonBundle {
                 style: Style {
                     size: Size::new(Val::Px(352.), Val::Px(48.)),
-                    position: Rect {
+                    position: UiRect {
                         bottom: Val::Px(186.),
                         left: Val::Px(0.),
                         ..Default::default()
@@ -400,19 +401,18 @@ pub fn game_over_system(
                     align_items: AlignItems::Center,
                     ..Default::default()
                 },
-                color: config.color_transparent.into(),
+                background_color: config.color_transparent.into(),
                 ..Default::default()
             })
             .with_children(|parent| {
-                parent.spawn_bundle(TextBundle {
-                    text: Text::with_section(
+                parent.spawn(TextBundle {
+                    text: Text::from_section(
                         left_text,
                         TextStyle {
                             font: config.font.clone(),
                             font_size: 66.,
                             color: left_color,
                         },
-                        Default::default(),
                     ),
                     ..Default::default()
                 });
@@ -421,10 +421,10 @@ pub fn game_over_system(
 
         // Right
         commands
-            .spawn_bundle(ButtonBundle {
+            .spawn(ButtonBundle {
                 style: Style {
                     size: Size::new(Val::Px(352.), Val::Px(48.)),
-                    position: Rect {
+                    position: UiRect {
                         bottom: Val::Px(186.),
                         left: Val::Px(416.),
                         ..Default::default()
@@ -434,19 +434,18 @@ pub fn game_over_system(
                     align_items: AlignItems::Center,
                     ..Default::default()
                 },
-                color: config.color_transparent.into(),
+                background_color: config.color_transparent.into(),
                 ..Default::default()
             })
             .with_children(|parent| {
-                parent.spawn_bundle(TextBundle {
-                    text: Text::with_section(
+                parent.spawn(TextBundle {
+                    text: Text::from_section(
                         right_text,
                         TextStyle {
                             font: config.font.clone(),
                             font_size: 66.,
                             color: right_color,
                         },
-                        Default::default(),
                     ),
                     ..Default::default()
                 });

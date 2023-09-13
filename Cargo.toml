@@ -1,6 +1,6 @@
 [package]
 name = "pong_bevy"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -10,12 +10,12 @@ opt-level = 3
 lto = "thin"
 
 [dependencies]
-bevy = "0.6"
-rand = "0.8.4"
+bevy = "0.9"
+rand = "0.8.5"
 console_error_panic_hook = "0.1"
 
 [dependencies.bevy_kira_audio]
-version = "0.8.0"
+version = "0.14.0"
 default-features = false
 features = [
     "wav",

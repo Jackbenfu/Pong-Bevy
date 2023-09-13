@@ -3,7 +3,7 @@ use bevy_kira_audio::{AudioSource};
 
 use crate::Vec3;
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub struct GameData {
     pub left_score: u32,
     pub right_score: u32,

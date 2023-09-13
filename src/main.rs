@@ -10,6 +10,7 @@ mod mode_1p;
 mod mode_2p;
 mod mode_wall;
 
+use bevy::log::{Level, LogPlugin};
 use bevy::prelude::*;
 use bevy_kira_audio::{AudioPlugin};
 use config::*;
@@ -24,8 +25,7 @@ fn setup_system(
     mut config: ResMut<Config>,
     asset_server: Res<AssetServer>,
 ) {
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
-    commands.spawn_bundle(UiCameraBundle::default());
+    commands.spawn(Camera2dBundle::default());
 
     config.game_paddle_speed = 400.;
     config.game_ball_speed_min = 500.;
@@ -46,29 +46,35 @@ fn setup_system(
 
     config.font = asset_server.load("fonts/Volter__28Goldfish_29.ttf");
 
-    config.audio_paddle_left = asset_server.load("sounds/left.wav");
-    config.audio_paddle_right = asset_server.load("sounds/right.wav");
-    config.audio_wall = asset_server.load("sounds/wall.wav");
+    //config.audio_paddle_left = asset_server.load("sounds/left.wav");
+    //config.audio_paddle_right = asset_server.load("sounds/right.wav");
+    //config.audio_wall = asset_server.load("sounds/wall.wav");
 }
 
 fn main() {
+    // TODO fixed update
+
     App::new()
-        .insert_resource(bevy::log::LogSettings {
-            level: bevy::log::Level::ERROR,
-            filter: "error,pong_bevy=error".to_string(),
-        })
         .insert_resource(ClearColor(Color::BLACK))
-        .insert_resource(WindowDescriptor {
-            title: "Pong".to_string(),
-            width: 768.,
-            height: 576.,
-            resizable: false,
-            mode: bevy::window::WindowMode::Windowed,
-            ..Default::default()
-        })
         .init_resource::<Config>()
         .add_startup_system(setup_system)
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins
+            .set(LogPlugin {
+                level: Level::ERROR,
+                filter: "error,pong_bevy=error".to_string(),
+            })
+            .set(WindowPlugin {
+                window: WindowDescriptor {
+                    title: "Pong".to_string(),
+                    width: 768.,
+                    height: 576.,
+                    resizable: false,
+                    mode: WindowMode::Windowed,
+                    ..Default::default()
+                },
+                ..default()
+            })
+        )
         .add_plugin(AudioPlugin)
         .add_plugin(MenuPlugin)
         .add_plugin(Mode1PPlugin)
