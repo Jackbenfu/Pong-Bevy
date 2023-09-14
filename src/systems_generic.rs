@@ -4,7 +4,7 @@ use bevy::{
     input::ButtonState,
     sprite::collide_aabb::*,
 };
-use bevy_kira_audio::{Audio};
+use bevy_kira_audio::{Audio, AudioControl};
 
 use crate::config::*;
 use crate::components::*;
@@ -52,11 +52,11 @@ pub fn move_ball_system(
 pub fn check_ball_collision_system(
     mut ball_query: Query<(&mut Ball, &mut Transform)>,
     mut ball_hit_paddle_event: EventWriter<BallHitPaddleEvent>,
-    collider_query: Query<(&Collider, &Transform/*, &SoundEmitter*/), Without<Ball>>,
-    config: Res<Config>/*,
-    audio: Res<Audio>,*/
+    collider_query: Query<(&Collider, &Transform, &SoundEmitter), Without<Ball>>,
+    config: Res<Config>,
+    audio: Res<Audio>,
 ) {
-    for (collider, collider_transform/*, collider_sound*/) in collider_query.iter() {
+    for (collider, collider_transform, collider_sound) in collider_query.iter() {
         let (mut ball, mut ball_transform) = ball_query.single_mut();
 
         let bx = ball_transform.translation.x;
@@ -161,7 +161,7 @@ pub fn check_ball_collision_system(
                 }
             }
 
-            //audio.play(collider_sound.source.clone());
+            audio.play(collider_sound.source.clone());
         }
     }
 }

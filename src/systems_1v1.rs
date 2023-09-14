@@ -27,13 +27,13 @@ pub fn setup_court_system(
     commands
         .spawn(create_top_wall_sprite(window.width(), window.height(), unit_size, color))
         .insert(GameModeEntity {})
-        //.insert(SoundEmitter { source: config.audio_wall.clone() })
+        .insert(SoundEmitter { source: config.audio_wall.clone() })
         .insert(Collider::Wall);
 
     commands
         .spawn(create_bottom_wall_sprite(window.width(), window.height(), unit_size, color))
         .insert(GameModeEntity {})
-        //.insert(SoundEmitter { source: config.audio_wall.clone() })
+        .insert(SoundEmitter { source: config.audio_wall.clone() })
         .insert(Collider::Wall);
 
     // Net
@@ -172,7 +172,7 @@ pub fn setup_left_paddle_system(
         .spawn(create_left_paddle_sprite(window.width(), config.sprite_unit_size, config.color_white))
         .insert(GameModeEntity {})
         .insert(LeftPaddle { speed: config.game_paddle_speed })
-        //.insert(SoundEmitter { source: config.audio_paddle_left.clone() })
+        .insert(SoundEmitter { source: config.audio_paddle_left.clone() })
         .insert(Collider::Paddle)
         .id();
 
@@ -193,7 +193,7 @@ pub fn setup_right_paddle_system(
         .spawn(create_right_paddle_sprite(window.width(), config.sprite_unit_size, config.color_white))
         .insert(GameModeEntity {})
         .insert(RightPaddle { velocity: Vec3::default(), speed: config.game_paddle_speed })
-        //.insert(SoundEmitter { source: config.audio_paddle_right.clone() })
+        .insert(SoundEmitter { source: config.audio_paddle_right.clone() })
         .insert(Collider::Paddle)
         .id();
 

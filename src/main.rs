@@ -46,9 +46,9 @@ fn setup_system(
 
     config.font = asset_server.load("fonts/Volter__28Goldfish_29.ttf");
 
-    //config.audio_paddle_left = asset_server.load("sounds/left.wav");
-    //config.audio_paddle_right = asset_server.load("sounds/right.wav");
-    //config.audio_wall = asset_server.load("sounds/wall.wav");
+    config.audio_paddle_left = asset_server.load("sounds/left.wav");
+    config.audio_paddle_right = asset_server.load("sounds/right.wav");
+    config.audio_wall = asset_server.load("sounds/wall.wav");
 }
 
 fn main() {

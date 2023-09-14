@@ -22,7 +22,7 @@ pub struct Config {
 
     pub font: Handle<Font>,
 
-//    pub audio_paddle_left: Handle<AudioSource>,
-//    pub audio_paddle_right: Handle<AudioSource>,
-//    pub audio_wall: Handle<AudioSource>,
+    pub audio_paddle_left: Handle<AudioSource>,
+    pub audio_paddle_right: Handle<AudioSource>,
+    pub audio_wall: Handle<AudioSource>,
 }
