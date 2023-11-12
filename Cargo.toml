@@ -10,12 +10,12 @@ opt-level = 3
 lto = "thin"
 
 [dependencies]
-bevy = "0.11.2"
+bevy = "0.12.0"
 rand = { version = "0.8.5", features = [] }
 console_error_panic_hook = "0.1.7"
 
 [dependencies.bevy_kira_audio]
-version = "0.17.0"
+version = "0.18.0"
 default-features = false
 features = [
     "wav",

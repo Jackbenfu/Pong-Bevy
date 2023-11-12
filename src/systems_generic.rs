@@ -201,7 +201,7 @@ pub fn back_to_menu_system(
     mut state: ResMut<NextState<GameState>>,
     mut keyboard_input_events: EventReader<KeyboardInput>,
 ) {
-    for event in keyboard_input_events.iter() {
+    for event in keyboard_input_events.read() {
         if let Some(key_code) = event.key_code {
             if event.state == ButtonState::Released && key_code == KeyCode::Escape {
                 state.set(GameState::Menu);

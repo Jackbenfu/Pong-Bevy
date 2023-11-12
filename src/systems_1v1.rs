@@ -282,7 +282,7 @@ pub fn increment_score_system(
         return;
     }
 
-    for event in ball_out_event.iter() {
+    for event in ball_out_event.read() {
         match event.0 {
             Side::Left => {
                 game_data.right_score += 1;
@@ -310,7 +310,7 @@ pub fn check_game_over_system(
         return;
     }
 
-    for event in ball_out_event.iter() {
+    for event in ball_out_event.read() {
         let mut ball = ball_query.single_mut();
         let (right_paddle_entity, mut right_paddle_transform) = right_paddle_query.single_mut();
         let (left_paddle_entity, mut left_paddle_transform) = left_paddle_query.single_mut();
@@ -351,7 +351,7 @@ pub fn game_over_system(
     mut game_over_event: EventReader<GameOverEvent>,
     config: Res<Config>,
 ) {
-    for event in game_over_event.iter() {
+    for event in game_over_event.read() {
         const WIN_TEXT: &str = "WIN";
         const LOSE_TEXT: &str = "LOSE";
 

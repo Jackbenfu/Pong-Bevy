@@ -410,7 +410,7 @@ fn increment_score_system(
         return;
     }
 
-    for _ in ball_hit_paddle_event.iter() {
+    for _ in ball_hit_paddle_event.read() {
         game_data.left_score += 1;
         left_score_query.single_mut().sections[0].value = format!("{}", game_data.left_score);
     }
@@ -425,7 +425,7 @@ fn check_game_over_system(
         return;
     }
 
-    for _ in ball_out_event.iter() {
+    for _ in ball_out_event.read() {
         game_over_event.send(GameOverEvent(Side::Right));
     }
 }
@@ -438,7 +438,7 @@ fn game_over_system(
 ) {
     let window = window.get_single().unwrap();
 
-    for _ in game_over_event.iter() {
+    for _ in game_over_event.read() {
         commands
             .spawn(ButtonBundle {
                 style: Style {
