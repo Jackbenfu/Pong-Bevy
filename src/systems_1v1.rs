@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 use rand::*;
 
 use crate::config::*;
@@ -17,10 +18,10 @@ pub fn reset_game_data_system(
 
 pub fn setup_court_system(
     mut commands: Commands,
-    windows: Res<Windows>,
+    window: Query<&Window, With<PrimaryWindow>>,
     config: Res<Config>,
 ) {
-    let window = windows.get_primary().unwrap();
+    let window = window.get_single().unwrap();
     let color = config.color_white;
     let unit_size = config.sprite_unit_size;
 
@@ -66,11 +67,8 @@ pub fn setup_scores_system(
         .spawn(TextBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: UiRect {
-                    left: Val::Px(310.),
-                    top: Val::Px(48.),
-                    ..Default::default()
-                },
+                left: Val::Px(310.),
+                top: Val::Px(48.),
                 ..Default::default()
             },
             text: Text::from_section(
@@ -91,11 +89,8 @@ pub fn setup_scores_system(
         .spawn(TextBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: UiRect {
-                    left: Val::Px(330.),
-                    top: Val::Px(88.),
-                    ..Default::default()
-                },
+                left: Val::Px(330.),
+                top: Val::Px(88.),
                 ..Default::default()
             },
             text: Text::from_section(
@@ -115,11 +110,8 @@ pub fn setup_scores_system(
         .spawn(TextBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: UiRect {
-                    left: Val::Px(426.),
-                    top: Val::Px(48.),
-                    ..Default::default()
-                },
+                left: Val::Px(426.),
+                top: Val::Px(48.),
                 ..Default::default()
             },
             text: Text::from_section(
@@ -140,11 +132,8 @@ pub fn setup_scores_system(
         .spawn(TextBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: UiRect {
-                    left: Val::Px(450.),
-                    top: Val::Px(88.),
-                    ..Default::default()
-                },
+                left: Val::Px(450.),
+                top: Val::Px(88.),
                 ..Default::default()
             },
             text: Text::from_section(
@@ -162,11 +151,11 @@ pub fn setup_scores_system(
 
 pub fn setup_left_paddle_system(
     mut commands: Commands,
-    windows: Res<Windows>,
+    window: Query<&Window, With<PrimaryWindow>>,
     config: Res<Config>,
     game_data: Res<GameData>,
 ) {
-    let window = windows.get_primary().unwrap();
+    let window = window.get_single().unwrap();
 
     let entity = commands
         .spawn(create_left_paddle_sprite(window.width(), config.sprite_unit_size, config.color_white))
@@ -183,11 +172,11 @@ pub fn setup_left_paddle_system(
 
 pub fn setup_right_paddle_system(
     mut commands: Commands,
-    windows: Res<Windows>,
+    window: Query<&Window, With<PrimaryWindow>>,
     config: Res<Config>,
     game_data: Res<GameData>,
 ) {
-    let window = windows.get_primary().unwrap();
+    let window = window.get_single().unwrap();
 
     let entity = commands
         .spawn(create_right_paddle_sprite(window.width(), config.sprite_unit_size, config.color_white))
@@ -390,12 +379,10 @@ pub fn game_over_system(
         commands
             .spawn(ButtonBundle {
                 style: Style {
-                    size: Size::new(Val::Px(352.), Val::Px(48.)),
-                    position: UiRect {
-                        bottom: Val::Px(186.),
-                        left: Val::Px(0.),
-                        ..Default::default()
-                    },
+                    width: Val::Px(352.),
+                    height: Val::Px(48.),
+                    bottom: Val::Px(186.),
+                    left: Val::Px(0.),
                     position_type: PositionType::Absolute,
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
@@ -423,12 +410,10 @@ pub fn game_over_system(
         commands
             .spawn(ButtonBundle {
                 style: Style {
-                    size: Size::new(Val::Px(352.), Val::Px(48.)),
-                    position: UiRect {
-                        bottom: Val::Px(186.),
-                        left: Val::Px(416.),
-                        ..Default::default()
-                    },
+                    width: Val::Px(352.),
+                    height: Val::Px(48.),
+                    bottom: Val::Px(186.),
+                    left: Val::Px(416.),
                     position_type: PositionType::Absolute,
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,

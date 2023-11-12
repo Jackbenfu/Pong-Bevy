@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 use rand::*;
 
 use crate::config::*;
@@ -10,6 +11,18 @@ use crate::state::*;
 
 pub struct Mode1PPlugin;
 
+#[derive(Debug, Eq, PartialEq, Clone, Hash, SystemSet)]
+enum Set {
+    ResetGameData,
+    SetupPaddle,
+    MoveBall,
+    Move,
+    IncrementScore,
+    CheckBallOut,
+    CheckGameOver,
+    Back,
+}
+
 impl Plugin for Mode1PPlugin {
     fn build(&self, app: &mut App) {
         const GAME_STATE: GameState = GameState::Mode1P;
@@ -19,45 +32,32 @@ impl Plugin for Mode1PPlugin {
             .add_event::<GameOverEvent>()
             .add_event::<BallOutEvent>()
             .add_event::<BallHitPaddleEvent>()
-            .add_system_set(
-                SystemSet::on_enter(GAME_STATE)
-                    .with_system(reset_game_data_system.label("reset_game_data"))
-                    .with_system(setup_court_system)
-                    .with_system(setup_scores_system)
-                    .with_system(setup_instructions_system)
-                    .with_system(setup_left_paddle_system.label("setup_paddle").after("reset_game_data"))
-                    .with_system(setup_right_paddle_system.label("setup_paddle").after("reset_game_data"))
-                    .with_system(setup_ball_system.after("setup_paddle"))
-            )
-            .add_system_set(
-                SystemSet::on_update(GAME_STATE)
-                    .with_system(service_system)
-                    .with_system(launch_ball_system)
-                    .with_system(move_left_paddle_with_keyboard_system)
-                    .with_system(move_ball_system.label("move_ball"))
-                    .with_system(move_right_paddle_with_ai_system.after("move_ball"))
-                    .label("move")
-                    .before("back")
-            )
-            .add_system_set(
-                SystemSet::on_update(GAME_STATE)
-                    .with_system(check_ball_collision_system)
-                    .with_system(check_ball_out_system.label("check_ball_out"))
-                    .with_system(increment_score_system.label("increment_score").after("check_ball_out"))
-                    .with_system(check_game_over_system.label("check_game_over").after("increment_score"))
-                    .with_system(game_over_system.after("check_game_over"))
-                    .after("move")
-                    .before("back")
-            )
-            .add_system_set(
-                SystemSet::on_update(GAME_STATE)
-                    .with_system(back_to_menu_system)
-                    .label("back")
-            )
-            .add_system_set(
-                SystemSet::on_exit(GAME_STATE)
-                    .with_system(cleanup_entities::<GameModeEntity>)
-            );
+            .add_systems(OnEnter(GAME_STATE), (
+                reset_game_data_system.in_set(Set::ResetGameData),
+                setup_court_system,
+                setup_scores_system,
+                setup_instructions_system,
+                setup_left_paddle_system.in_set(Set::SetupPaddle).after(Set::ResetGameData),
+                setup_right_paddle_system.in_set(Set::SetupPaddle).after(Set::ResetGameData),
+                setup_ball_system.after(Set::SetupPaddle)
+            ))
+            .add_systems(Update, (
+                service_system,
+                launch_ball_system,
+                move_left_paddle_with_keyboard_system,
+                move_ball_system.in_set(Set::MoveBall),
+                move_right_paddle_with_ai_system.after(Set::MoveBall)
+            ).run_if(in_state(GAME_STATE)).in_set(Set::Move).before(Set::Back))
+            .add_systems(
+                Update, (
+                    check_ball_collision_system,
+                    check_ball_out_system.in_set(Set::CheckBallOut),
+                    increment_score_system.in_set(Set::IncrementScore).after(Set::CheckBallOut),
+                    check_game_over_system.in_set(Set::CheckGameOver).after(Set::IncrementScore),
+                    game_over_system.after(Set::CheckGameOver),
+                ).run_if(in_state(GAME_STATE)).after(Set::Move).before(Set::Back))
+            .add_systems(Update, back_to_menu_system.in_set(Set::Back).run_if(in_state(GAME_STATE)))
+            .add_systems(OnExit(GAME_STATE), cleanup_entities::<GameModeEntity>);
     }
 }
 
@@ -69,12 +69,10 @@ fn setup_instructions_system(
     commands
         .spawn(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Px(352.), Val::Px(48.)),
-                position: UiRect {
-                    bottom: Val::Px(192.),
-                    left: Val::Px(0.),
-                    ..Default::default()
-                },
+                width: Val::Px(352.),
+                height: Val::Px(48.),
+                bottom: Val::Px(192.),
+                left: Val::Px(0.),
                 position_type: PositionType::Absolute,
                 justify_content: JustifyContent::FlexEnd,
                 align_items: AlignItems::Center,
@@ -103,12 +101,10 @@ fn setup_instructions_system(
     commands
         .spawn(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Px(352.), Val::Px(48.)),
-                position: UiRect {
-                    bottom: Val::Px(192.),
-                    left: Val::Px(416.),
-                    ..Default::default()
-                },
+                width: Val::Px(352.),
+                height: Val::Px(48.),
+                bottom: Val::Px(192.),
+                left: Val::Px(416.),
                 position_type: PositionType::Absolute,
                 justify_content: JustifyContent::FlexStart,
                 align_items: AlignItems::Center,
@@ -137,12 +133,10 @@ fn setup_instructions_system(
     commands
         .spawn(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Px(352.), Val::Px(48.)),
-                position: UiRect {
-                    bottom: Val::Px(144.),
-                    left: Val::Px(0.),
-                    ..Default::default()
-                },
+                width: Val::Px(352.),
+                height: Val::Px(48.),
+                bottom: Val::Px(144.),
+                left: Val::Px(0.),
                 position_type: PositionType::Absolute,
                 justify_content: JustifyContent::FlexEnd,
                 align_items: AlignItems::Center,
@@ -171,12 +165,10 @@ fn setup_instructions_system(
     commands
         .spawn(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Px(352.), Val::Px(48.)),
-                position: UiRect {
-                    bottom: Val::Px(144.),
-                    left: Val::Px(416.),
-                    ..Default::default()
-                },
+                width: Val::Px(352.),
+                height: Val::Px(48.),
+                bottom: Val::Px(144.),
+                left: Val::Px(416.),
                 position_type: PositionType::Absolute,
                 justify_content: JustifyContent::FlexStart,
                 align_items: AlignItems::Center,
@@ -205,12 +197,10 @@ fn setup_instructions_system(
     commands
         .spawn(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Px(352.), Val::Px(48.)),
-                position: UiRect {
-                    bottom: Val::Px(96.),
-                    left: Val::Px(0.),
-                    ..Default::default()
-                },
+                width: Val::Px(352.),
+                height: Val::Px(48.),
+                bottom: Val::Px(96.),
+                left: Val::Px(0.),
                 position_type: PositionType::Absolute,
                 justify_content: JustifyContent::FlexEnd,
                 align_items: AlignItems::Center,
@@ -239,12 +229,10 @@ fn setup_instructions_system(
     commands
         .spawn(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Px(352.), Val::Px(48.)),
-                position: UiRect {
-                    bottom: Val::Px(96.),
-                    left: Val::Px(416.),
-                    ..Default::default()
-                },
+                width: Val::Px(352.),
+                height: Val::Px(48.),
+                bottom: Val::Px(96.),
+                left: Val::Px(416.),
                 position_type: PositionType::Absolute,
                 justify_content: JustifyContent::FlexStart,
                 align_items: AlignItems::Center,
@@ -273,7 +261,7 @@ fn setup_instructions_system(
 fn move_right_paddle_with_ai_system(
     mut paddle_query: Query<(&mut RightPaddle, &mut Transform), Without<Ball>>,
     ball_query: Query<(&Ball, &Transform)>,
-    windows: Res<Windows>,
+    window: Query<&Window, With<PrimaryWindow>>,
     time: Res<Time>,
     config: Res<Config>,
 ) {
@@ -285,7 +273,7 @@ fn move_right_paddle_with_ai_system(
         return;
     }
 
-    let window = windows.get_primary().unwrap();
+    let window = window.get_single().unwrap();
 
     if ball_transform.translation.x > window.width() / 2. {
         paddle_entity.velocity.y = 0.;

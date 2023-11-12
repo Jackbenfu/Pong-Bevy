@@ -1,5 +1,6 @@
-use bevy::prelude::Resource;
-use crate::{Color, Font, Handle};
+use bevy::prelude::{Handle, Resource};
+use bevy::text::Font;
+use crate::{Color};
 use bevy_kira_audio::{AudioSource};
 
 #[derive(Default, Resource)]

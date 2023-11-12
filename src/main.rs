@@ -10,15 +10,19 @@ mod mode_1p;
 mod mode_2p;
 mod mode_wall;
 
-use bevy::log::{Level, LogPlugin};
-use bevy::prelude::*;
-use bevy_kira_audio::{AudioPlugin};
+use bevy::app::{App, PluginGroup};
+use bevy::asset::AssetServer;
+use bevy::DefaultPlugins;
+use bevy::prelude::{Camera2dBundle, ClearColor, Color, Commands, Res, ResMut, Startup, WindowPlugin};
+use bevy::window::{ExitCondition, Window, WindowMode};
+use bevy_kira_audio::AudioPlugin;
 use config::*;
-use state::*;
-use menu::*;
-use mode_1p::*;
-use mode_2p::*;
-use mode_wall::*;
+
+use crate::menu::MenuPlugin;
+use crate::mode_1p::Mode1PPlugin;
+use crate::mode_2p::Mode2PPlugin;
+use crate::mode_wall::ModeWallPlugin;
+use crate::state::GameState;
 
 fn setup_system(
     mut commands: Commands,
@@ -57,29 +61,25 @@ fn main() {
     App::new()
         .insert_resource(ClearColor(Color::BLACK))
         .init_resource::<Config>()
-        .add_startup_system(setup_system)
+        .add_systems(Startup, setup_system)
         .add_plugins(DefaultPlugins
-            .set(LogPlugin {
-                level: Level::ERROR,
-                filter: "error,pong_bevy=error".to_string(),
-            })
             .set(WindowPlugin {
-                window: WindowDescriptor {
+                primary_window: Some(Window {
                     title: "Pong".to_string(),
-                    width: 768.,
-                    height: 576.,
+                    resolution: (768., 576.).into(),
                     resizable: false,
                     mode: WindowMode::Windowed,
                     ..Default::default()
-                },
-                ..default()
+                }),
+                exit_condition: ExitCondition::OnPrimaryClosed,
+                close_when_requested: false,
             })
         )
-        .add_plugin(AudioPlugin)
-        .add_plugin(MenuPlugin)
-        .add_plugin(Mode1PPlugin)
-        .add_plugin(Mode2PPlugin)
-        .add_plugin(ModeWallPlugin)
-        .add_state(GameState::Menu)
+        .add_plugins(AudioPlugin)
+        .add_plugins(MenuPlugin)
+        .add_plugins(Mode1PPlugin)
+        .add_plugins(Mode2PPlugin)
+        .add_plugins(ModeWallPlugin)
+        .add_state::<GameState>()
         .run();
 }

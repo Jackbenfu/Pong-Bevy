@@ -4,6 +4,7 @@ use bevy::{
     input::ButtonState,
     sprite::collide_aabb::*,
 };
+use bevy::window::PrimaryWindow;
 use bevy_kira_audio::{Audio, AudioControl};
 
 use crate::config::*;
@@ -14,11 +15,11 @@ use crate::state::*;
 pub fn move_left_paddle_with_keyboard_system(
     mut paddle_query: Query<(&LeftPaddle, &mut Transform)>,
     keyboard: Res<Input<KeyCode>>,
-    windows: Res<Windows>,
+    window: Query<&Window, With<PrimaryWindow>>,
     time: Res<Time>,
     config: Res<Config>,
 ) {
-    let window = windows.get_primary().unwrap();
+    let window = window.get_single().unwrap();
     let mut direction = 0.;
 
     if keyboard.pressed(KeyCode::S) {
@@ -169,7 +170,7 @@ pub fn check_ball_collision_system(
 pub fn check_ball_out_system(
     mut ball_out_event: EventWriter<BallOutEvent>,
     mut ball_query: Query<&Transform, With<Ball>>,
-    windows: Res<Windows>,
+    window: Query<&Window, With<PrimaryWindow>>,
     config: Res<Config>,
     game_data: Res<GameData>,
 ) {
@@ -177,7 +178,7 @@ pub fn check_ball_out_system(
         return;
     }
 
-    let window = windows.get_primary().unwrap();
+    let window = window.get_single().unwrap();
     let ball_transform = ball_query.single_mut();
 
     if ball_transform.translation.x < -window.width() / 2. - config.game_ball_oob_x {
@@ -197,13 +198,13 @@ pub fn cleanup_entities<T: Component>(
 }
 
 pub fn back_to_menu_system(
-    mut state: ResMut<State<GameState>>,
+    mut state: ResMut<NextState<GameState>>,
     mut keyboard_input_events: EventReader<KeyboardInput>,
 ) {
     for event in keyboard_input_events.iter() {
         if let Some(key_code) = event.key_code {
             if event.state == ButtonState::Released && key_code == KeyCode::Escape {
-                state.set(GameState::Menu).unwrap();
+                state.set(GameState::Menu);
             }
         }
     }

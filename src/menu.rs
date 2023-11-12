@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::app::*;
+use bevy::window::PrimaryWindow;
 
 use crate::config::*;
 use crate::systems_generic::*;
@@ -33,39 +34,31 @@ impl Plugin for MenuPlugin {
         const GAME_STATE: GameState = GameState::Menu;
 
         app
-            .add_system_set(
-                SystemSet::on_enter(GAME_STATE)
-                    .with_system(setup_background_system)
-                    .with_system(setup_title_system)
-                    .with_system(setup_copyright_system)
-                    .with_system(setup_buttons_system)
-            )
-            .add_system_set(
-                SystemSet::on_update(GAME_STATE)
-                    .with_system(hover_buttons_system)
-                    .with_system(click_1_player_button_system)
-                    .with_system(click_2_players_button_system)
-                    .with_system(click_wall_mode_button_system)
-            )
-            .add_system_set(
-                SystemSet::on_exit(GAME_STATE)
-                    .with_system(cleanup_entities::<MenuEntity>)
-            );
+            .add_systems(OnEnter(GAME_STATE), (
+                setup_background_system,
+                setup_title_system,
+                setup_copyright_system,
+                setup_buttons_system
+            ))
+            .add_systems(Update, (
+                hover_buttons_system,
+                click_1_player_button_system,
+                click_2_players_button_system,
+                click_wall_mode_button_system
+            ).run_if(in_state(GAME_STATE)))
+            .add_systems(OnExit(GAME_STATE), cleanup_entities::<MenuEntity>);
 
         #[cfg(not(target_arch = "wasm32"))]
-        app.add_system_set(
-            SystemSet::on_update(GAME_STATE)
-                .with_system(click_quit_button_system)
-        );
+        app.add_systems(Update, click_quit_button_system.run_if(in_state(GAME_STATE)));
     }
 }
 
 fn setup_background_system(
     mut commands: Commands,
-    windows: Res<Windows>,
+    window: Query<&Window, With<PrimaryWindow>>,
     config: Res<Config>,
 ) {
-    let window = windows.get_primary().unwrap();
+    let window = window.get_single().unwrap();
     let color = config.color_grey;
     let unit_size = config.sprite_unit_size;
 
@@ -108,20 +101,18 @@ fn setup_background_system(
 
 fn setup_title_system(
     mut commands: Commands,
-    windows: Res<Windows>,
+    window: Query<&Window, With<PrimaryWindow>>,
     config: Res<Config>,
 ) {
-    let window = windows.get_primary().unwrap();
+    let window = window.get_single().unwrap();
 
     commands
         .spawn(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Px(416.), Val::Px(128.)),
-                position: UiRect {
-                    right: Val::Px((window.width() - 416.) / 2.),
-                    top: Val::Px(128.),
-                    ..Default::default()
-                },
+                width: Val::Px(416.),
+                height: Val::Px(128.),
+                right: Val::Px((window.width() - 416.) / 2.),
+                top: Val::Px(128.),
                 position_type: PositionType::Absolute,
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
@@ -155,11 +146,8 @@ fn setup_copyright_system(
             style: Style {
                 align_self: AlignSelf::FlexEnd,
                 position_type: PositionType::Absolute,
-                position: UiRect {
-                    bottom: Val::Px(config.sprite_unit_size * 2.),
-                    right: Val::Px(config.sprite_unit_size),
-                    ..Default::default()
-                },
+                bottom: Val::Px(config.sprite_unit_size * 2.),
+                right: Val::Px(config.sprite_unit_size),
                 ..Default::default()
             },
             text: Text::from_section(
@@ -177,21 +165,19 @@ fn setup_copyright_system(
 
 fn setup_buttons_system(
     mut commands: Commands,
-    windows: Res<Windows>,
+    window: Query<&Window, With<PrimaryWindow>>,
     config: Res<Config>,
 ) {
-    let window = windows.get_primary().unwrap();
+    let window = window.get_single().unwrap();
 
     // 1 player button
     commands
         .spawn(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Px(256.), Val::Px(48.)),
-                position: UiRect {
-                    right: Val::Px((window.width() - 256.) / 2.),
-                    top: Val::Px(272.),
-                    ..Default::default()
-                },
+                width: Val::Px(256.),
+                height: Val::Px(48.),
+                right: Val::Px((window.width() - 256.) / 2.),
+                top: Val::Px(272.),
                 position_type: PositionType::Absolute,
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
@@ -221,12 +207,10 @@ fn setup_buttons_system(
     commands
         .spawn(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Px(256.), Val::Px(48.)),
-                position: UiRect {
-                    right: Val::Px((window.width() - 256.) / 2.),
-                    top: Val::Px(336.),
-                    ..Default::default()
-                },
+                width: Val::Px(256.),
+                height: Val::Px(48.),
+                right: Val::Px((window.width() - 256.) / 2.),
+                top: Val::Px(336.),
                 position_type: PositionType::Absolute,
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
@@ -256,12 +240,10 @@ fn setup_buttons_system(
     commands
         .spawn(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Px(256.), Val::Px(48.)),
-                position: UiRect {
-                    right: Val::Px((window.width() - 256.) / 2.),
-                    top: Val::Px(400.),
-                    ..Default::default()
-                },
+                width: Val::Px(256.),
+                height: Val::Px(48.),
+                right: Val::Px((window.width() - 256.) / 2.),
+                top: Val::Px(400.),
                 position_type: PositionType::Absolute,
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
@@ -292,12 +274,10 @@ fn setup_buttons_system(
     commands
         .spawn(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Px(256.), Val::Px(48.)),
-                position: UiRect {
-                    right: Val::Px((window.width() - 256.) / 2.),
-                    top: Val::Px(464.),
-                    ..Default::default()
-                },
+                width: Val::Px(256.),
+                height: Val::Px(48.),
+                right: Val::Px((window.width() - 256.) / 2.),
+                top: Val::Px(464.),
                 position_type: PositionType::Absolute,
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
@@ -325,12 +305,12 @@ fn setup_buttons_system(
 }
 
 fn hover_buttons_system(
-    mut windows: ResMut<Windows>,
+    mut window: Query<&mut Window, With<PrimaryWindow>>,
     mut interaction_query: Query<(&Interaction, &Children), With<MenuButton>>,
     mut text_query: Query<&mut Text>,
     config: Res<Config>,
 ) {
-    let window = windows.get_primary_mut().unwrap();
+    let mut window = window.get_single_mut().unwrap();
     let mut hovered: bool = false;
 
     for (interaction, children) in interaction_query.iter_mut() {
@@ -347,40 +327,40 @@ fn hover_buttons_system(
         }
     }
 
-    window.set_cursor_icon(if hovered { CursorIcon::Hand } else { CursorIcon::Default });
+    window.cursor.icon = if hovered { CursorIcon::Hand } else { CursorIcon::Default };
 }
 
 fn click_1_player_button_system(
-    mut state: ResMut<State<GameState>>,
+    mut state: ResMut<NextState<GameState>>,
     interaction_query: Query<&Interaction, With<MenuButton1Player>>,
 ) {
     match *interaction_query.single() {
-        Interaction::Clicked => {
-            state.set(GameState::Mode1P).unwrap();
+        Interaction::Pressed => {
+            state.set(GameState::Mode1P);
         }
         _ => {}
     }
 }
 
 fn click_2_players_button_system(
-    mut state: ResMut<State<GameState>>,
+    mut state: ResMut<NextState<GameState>>,
     interaction_query: Query<&Interaction, With<MenuButton2Players>>,
 ) {
     match *interaction_query.single() {
-        Interaction::Clicked => {
-            state.set(GameState::Mode2P).unwrap();
+        Interaction::Pressed => {
+            state.set(GameState::Mode2P);
         }
         _ => {}
     }
 }
 
 fn click_wall_mode_button_system(
-    mut state: ResMut<State<GameState>>,
+    mut state: ResMut<NextState<GameState>>,
     interaction_query: Query<&Interaction, With<MenuButtonWallMode>>,
 ) {
     match *interaction_query.single() {
-        Interaction::Clicked => {
-            state.set(GameState::ModeWall).unwrap();
+        Interaction::Pressed => {
+            state.set(GameState::ModeWall);
         }
         _ => {}
     }
@@ -392,7 +372,7 @@ fn click_quit_button_system(
     interaction_query: Query<&Interaction, With<MenuButtonQuit>>,
 ) {
     match *interaction_query.single() {
-        Interaction::Clicked => {
+        Interaction::Pressed => {
             app_exit_events.send(AppExit);
         }
         _ => {}
